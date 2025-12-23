@@ -7,16 +7,25 @@
 - `python3 -m http.server 8080`
 - 浏览器打开 `http://localhost:8080/`
 
-部署成可分享链接（任选其一）：
+部署成可分享链接（推荐 GitHub Pages）：
 
-### 方案 A：GitHub Pages（推荐，免费）
+### GitHub Pages（免费）
 
-1. 在 GitHub 新建仓库，把本项目 push 到 `main` 分支
-2. 打开仓库 `Settings → Pages → Build and deployment`，选择 `GitHub Actions`
-3. 等待 Actions 里 `Deploy GitHub Pages` 工作流跑完
-4. 访问并分享：`https://<你的用户名>.github.io/<仓库名>/`
+本仓库已内置自动部署：每次 push 到 `main` 会自动把静态站点发布到 `gh-pages` 分支。
 
-本仓库已内置自动部署配置：`.github/workflows/deploy-pages.yml` + `.nojekyll`。
+1. 打开仓库：`Settings → Pages`
+2. `Build and deployment` 里选择：
+   - `Source`：`Deploy from a branch`
+   - `Branch`：`gh-pages` / `(root)`
+3. 等待 1～2 分钟（或去 `Actions` 看 `Deploy GitHub Pages (gh-pages branch)` 是否成功）
+4. 访问并分享网站链接：
+   - 你的仓库是 `Jerry-812/goosegame`，通常地址是：`https://jerry-812.github.io/goosegame/`
+
+如果你看到部署失败（红叉）：
+
+- 先确认 `Actions` 没有被禁用（仓库 `Settings → Actions → General`）
+- 再确认 `Settings → Pages` 已选择 `gh-pages` 分支发布
+- 等待一次新的 push 触发工作流（或在 `Actions` 里手动 `Run workflow`）
 
 ### 方案 B：Netlify（免费/一键）
 
