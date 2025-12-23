@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768">
+  <defs>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000" flood-opacity="0.22" />
+    </filter>
+    <radialGradient id="skin" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffe6d6" />
+      <stop offset="0.55" stop-color="#ffd0b8" />
+      <stop offset="1" stop-color="#f6b99e" />
+    </radialGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7a2f58" />
+      <stop offset="1" stop-color="#ff77b7" />
+    </linearGradient>
+    <linearGradient id="dress" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffcc4a" />
+      <stop offset="0.55" stop-color="#ffe39b" />
+      <stop offset="1" stop-color="#fff6da" />
+    </linearGradient>
+    <radialGradient id="wing" cx="50%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="0.6" stop-color="#ffd1e7" stop-opacity="0.75" />
+      <stop offset="1" stop-color="#ff77b7" stop-opacity="0.35" />
+    </radialGradient>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="256" cy="704" rx="132" ry="22" fill="#000" opacity="0.10" />
+
+    <!-- wings -->
+    <path d="M98 500c0-130 120-186 230-134-44 36-66 76-66 134s22 98 66 134C218 686 98 630 98 500z" fill="url(#wing)" />
+    <path d="M414 500c0-130-120-186-230-134 44 36 66 76 66 134s-22 98-66 134c110 52 230-4 230-134z" fill="url(#wing)" />
+
+    <!-- hair -->
+    <path d="M132 228c14-96 88-154 124-154s110 58 124 154c-42-30-80-44-124-44s-82 14-124 44z" fill="url(#hair)" opacity="0.95" />
+
+    <!-- head -->
+    <circle cx="256" cy="292" r="78" fill="url(#skin)" />
+    <ellipse cx="226" cy="304" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <ellipse cx="286" cy="304" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <circle cx="232" cy="300" r="6" fill="#fff" opacity="0.9" />
+    <circle cx="292" cy="300" r="6" fill="#fff" opacity="0.9" />
+    <path d="M246 330c10 10 20 10 20 0" fill="none" stroke="#c06a70" stroke-width="8" stroke-linecap="round" />
+
+    <!-- dress -->
+    <path d="M166 468c24-76 54-114 90-114s66 38 90 114c-18 92-52 176-90 176s-72-84-90-176z" fill="url(#dress)" />
+    <path d="M136 528c44-42 86-62 120-62s76 20 120 62c-14 132-82 240-120 240s-106-108-120-240z" fill="url(#dress)" />
+    <path d="M256 454v308" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity="0.16" />
+
+    <!-- wand -->
+    <path d="M342 520c58 22 92 62 102 122" fill="none" stroke="url(#skin)" stroke-width="18" stroke-linecap="round" />
+    <path d="M410 590l64 64" stroke="#fff6cc" stroke-width="10" stroke-linecap="round" />
+    <path d="M490 692l-26-14-26 14 10-26-22-18 28-2 10-26 10 26 28 2-22 18z" fill="#fff6cc" opacity="0.95" />
+
+    <!-- shoes -->
+    <path d="M140 744c46 18 84 18 112 0" fill="none" stroke="#ff77b7" stroke-width="14" stroke-linecap="round" opacity="0.9" />
+    <path d="M260 744c46 18 84 18 112 0" fill="none" stroke="#ff77b7" stroke-width="14" stroke-linecap="round" opacity="0.9" />
+  </g>
+</svg>
+
