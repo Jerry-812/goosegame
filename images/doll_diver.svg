@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420">
+  <defs>
+    <linearGradient id="suit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3bb7ff" />
+      <stop offset="0.55" stop-color="#8fe0ff" />
+      <stop offset="1" stop-color="#e7fbff" />
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2a3b" />
+      <stop offset="1" stop-color="#2a506e" />
+    </linearGradient>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="150" cy="372" rx="66" ry="18" fill="#000" opacity="0.10" />
+
+    <!-- hair -->
+    <path d="M86 98c8-40 38-64 64-64s56 24 64 64c-14-10-30-16-64-16S100 88 86 98z" fill="url(#hair)" />
+
+    <!-- head -->
+    <circle cx="150" cy="124" r="42" fill="#ffd1b8" />
+
+    <!-- goggles -->
+    <rect x="112" y="112" width="76" height="30" rx="14" fill="#203a5a" opacity="0.9" />
+    <rect x="120" y="118" width="28" height="18" rx="8" fill="#a7d4ff" opacity="0.7" />
+    <rect x="152" y="118" width="28" height="18" rx="8" fill="#a7d4ff" opacity="0.7" />
+    <path d="M148 126h4" stroke="#203a5a" stroke-width="6" stroke-linecap="round" />
+
+    <path d="M140 150c8 8 18 8 20 0" fill="none" stroke="#c76a6a" stroke-width="4" stroke-linecap="round" opacity="0.8" />
+
+    <!-- wetsuit body -->
+    <path d="M108 190c12-26 26-38 42-38s30 12 42 38c-10 44-26 84-42 84s-32-40-42-84z" fill="url(#suit)" />
+    <path d="M150 164v110" stroke="#fff" stroke-width="6" opacity="0.22" />
+    <path d="M118 226h64" stroke="#0d5a85" stroke-width="6" stroke-linecap="round" opacity="0.55" />
+
+    <!-- arms -->
+    <path d="M98 214c-18 12-28 26-32 50" fill="none" stroke="#3bb7ff" stroke-width="16" stroke-linecap="round" />
+    <path d="M202 214c18 12 28 26 32 50" fill="none" stroke="#3bb7ff" stroke-width="16" stroke-linecap="round" />
+
+    <!-- fins -->
+    <path d="M128 292c-10 30-14 54-14 90" fill="none" stroke="#0d5a85" stroke-width="16" stroke-linecap="round" opacity="0.85" />
+    <path d="M172 292c10 30 14 54 14 90" fill="none" stroke="#0d5a85" stroke-width="16" stroke-linecap="round" opacity="0.85" />
+    <path d="M100 382c18 10 34 10 48 0" fill="none" stroke="#0d5a85" stroke-width="12" stroke-linecap="round" opacity="0.85" />
+    <path d="M152 382c18 10 34 10 48 0" fill="none" stroke="#0d5a85" stroke-width="12" stroke-linecap="round" opacity="0.85" />
+  </g>
+</svg>
+

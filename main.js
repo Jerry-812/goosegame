@@ -3,7 +3,7 @@ const STORAGE = {
   sound: 'goosegame.sound',
 }
 
-const APPROX_ASPECT = 1.35
+const APPROX_ASPECT = 1.4
 
 const MODES = {
   easy: { key: 'easy', label: '轻松', seconds: 60, itemsPerType: 3, maxTray: 7, layerMax: 6 },
@@ -24,7 +24,7 @@ const DOLL_TYPES = [
   { type: 'fairy', label: '仙子', scale: 2.7 },
 ]
 
-const ASSETS = ['./images/pot.png', ...DOLL_TYPES.map((t) => `./images/barbie_${t.type}.png`)]
+const ASSETS = ['./images/pot.svg', ...DOLL_TYPES.map((t) => `./images/doll_${t.type}.svg`)]
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
@@ -401,7 +401,7 @@ function generateDolls(boardW, boardH, cfg, rng) {
         id: dollId,
         type: t.type,
         label: t.label,
-        image: `./images/barbie_${t.type}.png`,
+        image: `./images/doll_${t.type}.svg`,
         size,
         x,
         y,

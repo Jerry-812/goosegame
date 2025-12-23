@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420">
+  <defs>
+    <linearGradient id="dress" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffa45f" />
+      <stop offset="0.55" stop-color="#ffd0a8" />
+      <stop offset="1" stop-color="#fff0de" />
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f0f14" />
+      <stop offset="1" stop-color="#4a3a52" />
+    </linearGradient>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="150" cy="372" rx="58" ry="18" fill="#000" opacity="0.10" />
+
+    <!-- hair -->
+    <path d="M90 96c6-38 34-60 60-60s54 22 60 60c-14-10-28-16-60-16S104 86 90 96z" fill="url(#hair)" />
+    <path d="M76 138c16-44 44-62 74-62s58 18 74 62c-18-22-38-28-74-28s-56 6-74 28z" fill="url(#hair)" opacity="0.92" />
+
+    <!-- head -->
+    <circle cx="150" cy="124" r="42" fill="#ffd1b8" />
+    <circle cx="134" cy="122" r="4.5" fill="#221a1a" />
+    <circle cx="166" cy="122" r="4.5" fill="#221a1a" />
+    <path d="M138 142c10 10 22 10 24 0" fill="none" stroke="#c76a6a" stroke-width="4" stroke-linecap="round" />
+
+    <!-- long dress -->
+    <path d="M118 178c10-18 22-28 32-28s22 10 32 28c-6 26-18 44-32 44s-26-18-32-44z" fill="url(#dress)" />
+    <path d="M106 226c14-12 28-18 44-18s30 6 44 18c-6 78-24 154-44 154s-38-76-44-154z" fill="url(#dress)" />
+    <path d="M150 206v170" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity="0.25" />
+
+    <!-- arms -->
+    <path d="M102 198c-18 14-28 30-30 50" fill="none" stroke="#ffd1b8" stroke-width="14" stroke-linecap="round" />
+    <path d="M198 198c18 14 28 30 30 50" fill="none" stroke="#ffd1b8" stroke-width="14" stroke-linecap="round" />
+
+    <!-- heels -->
+    <path d="M118 388c16 6 28 6 40 0" fill="none" stroke="#ff4b9a" stroke-width="10" stroke-linecap="round" />
+    <path d="M142 388c16 6 28 6 40 0" fill="none" stroke="#ff4b9a" stroke-width="10" stroke-linecap="round" />
+  </g>
+</svg>
+

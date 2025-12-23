@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420">
+  <defs>
+    <linearGradient id="dress" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffcc4a" />
+      <stop offset="0.55" stop-color="#ffe39b" />
+      <stop offset="1" stop-color="#fff6da" />
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7a2f58" />
+      <stop offset="1" stop-color="#ff77b7" />
+    </linearGradient>
+    <radialGradient id="wing" cx="50%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="0.6" stop-color="#ffd1e7" stop-opacity="0.7" />
+      <stop offset="1" stop-color="#ff77b7" stop-opacity="0.35" />
+    </radialGradient>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="150" cy="372" rx="82" ry="18" fill="#000" opacity="0.10" />
+
+    <!-- wings -->
+    <path d="M64 224c0-54 48-78 92-56-16 16-24 34-24 56s8 40 24 56c-44 22-92-2-92-56z" fill="url(#wing)" />
+    <path d="M236 224c0-54-48-78-92-56 16 16 24 34 24 56s-8 40-24 56c44 22 92-2 92-56z" fill="url(#wing)" />
+
+    <!-- hair -->
+    <path d="M88 96c8-40 38-64 64-64s56 24 64 64c-14-10-30-16-64-16S102 86 88 96z" fill="url(#hair)" opacity="0.95" />
+
+    <!-- head -->
+    <circle cx="150" cy="122" r="42" fill="#ffd1b8" />
+    <circle cx="134" cy="120" r="4.5" fill="#221a1a" />
+    <circle cx="166" cy="120" r="4.5" fill="#221a1a" />
+    <path d="M140 140c8 8 18 8 20 0" fill="none" stroke="#c76a6a" stroke-width="4" stroke-linecap="round" />
+    <circle cx="124" cy="132" r="7" fill="#ff9db9" opacity="0.28" />
+    <circle cx="176" cy="132" r="7" fill="#ff9db9" opacity="0.28" />
+
+    <!-- dress -->
+    <path d="M112 186c12-24 24-36 38-36s26 12 38 36c-10 40-24 72-38 72s-28-32-38-72z" fill="url(#dress)" />
+    <path d="M92 236c18-16 38-24 58-24s40 8 58 24c-8 62-34 132-58 132s-50-70-58-132z" fill="url(#dress)" />
+    <path d="M150 206v160" stroke="#fff" stroke-width="6" opacity="0.22" />
+
+    <!-- wand -->
+    <path d="M210 208c18 14 28 30 32 52" fill="none" stroke="#ffd1b8" stroke-width="14" stroke-linecap="round" />
+    <path d="M232 246l26 26" stroke="#fff6cc" stroke-width="6" stroke-linecap="round" />
+    <path d="M268 280l-12-6-12 6 4-12-10-8 12-1 6-11 6 11 12 1-10 8z" fill="#fff6cc" opacity="0.95" />
+
+    <!-- legs -->
+    <path d="M132 300c-10 30-14 54-14 82" fill="none" stroke="#ffd1b8" stroke-width="14" stroke-linecap="round" />
+    <path d="M168 300c10 30 14 54 14 82" fill="none" stroke="#ffd1b8" stroke-width="14" stroke-linecap="round" />
+    <path d="M104 382c18 8 34 8 46 0" fill="none" stroke="#ff77b7" stroke-width="10" stroke-linecap="round" opacity="0.9" />
+    <path d="M150 382c18 8 34 8 46 0" fill="none" stroke="#ff77b7" stroke-width="10" stroke-linecap="round" opacity="0.9" />
+  </g>
+</svg>
+

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goosegame-v3'
+const CACHE_NAME = 'goosegame-v4'
 
 const CORE_ASSETS = [
   './',
@@ -9,17 +9,17 @@ const CORE_ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/maskable-512.png',
-  './images/pot.png',
-  './images/barbie_classic.png',
-  './images/barbie_princess.png',
-  './images/barbie_doctor.png',
-  './images/barbie_astronaut.png',
-  './images/barbie_model.png',
-  './images/barbie_rockstar.png',
-  './images/barbie_chef.png',
-  './images/barbie_dancer.png',
-  './images/barbie_diver.png',
-  './images/barbie_fairy.png',
+  './images/pot.svg',
+  './images/doll_classic.svg',
+  './images/doll_princess.svg',
+  './images/doll_doctor.svg',
+  './images/doll_astronaut.svg',
+  './images/doll_model.svg',
+  './images/doll_rockstar.svg',
+  './images/doll_chef.svg',
+  './images/doll_dancer.svg',
+  './images/doll_diver.svg',
+  './images/doll_fairy.svg'
 ]
 
 self.addEventListener('install', (event) => {
@@ -69,4 +69,3 @@ self.addEventListener('fetch', (event) => {
     })()
   )
 })
-

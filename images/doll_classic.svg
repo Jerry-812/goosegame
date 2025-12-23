@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420">
+  <defs>
+    <linearGradient id="dress" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5aa7" />
+      <stop offset="0.55" stop-color="#ff77b7" />
+      <stop offset="1" stop-color="#ffd1e7" />
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5a2b0a" />
+      <stop offset="1" stop-color="#c0762a" />
+    </linearGradient>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <g filter="url(#ds)">
+    <!-- shadow base -->
+    <ellipse cx="150" cy="372" rx="70" ry="18" fill="#000" opacity="0.10" />
+
+    <!-- hair -->
+    <path
+      d="M84 88c6-38 38-62 66-62s60 24 66 62c-12-10-28-16-66-16S96 78 84 88z"
+      fill="url(#hair)"
+    />
+    <path
+      d="M72 120c10-36 36-58 78-58s68 22 78 58c-10-14-28-22-78-22s-68 8-78 22z"
+      fill="url(#hair)"
+      opacity="0.95"
+    />
+
+    <!-- head -->
+    <circle cx="150" cy="112" r="42" fill="#ffd1b8" />
+    <circle cx="134" cy="110" r="4.5" fill="#2a1b1b" opacity="0.9" />
+    <circle cx="166" cy="110" r="4.5" fill="#2a1b1b" opacity="0.9" />
+    <path d="M138 128c10 10 22 10 24 0" fill="none" stroke="#c76a6a" stroke-width="4" stroke-linecap="round" />
+    <circle cx="122" cy="120" r="7" fill="#ff9db9" opacity="0.35" />
+    <circle cx="178" cy="120" r="7" fill="#ff9db9" opacity="0.35" />
+
+    <!-- torso -->
+    <path d="M114 164c10-16 24-24 36-24s26 8 36 24c-10 16-22 26-36 26s-26-10-36-26z" fill="#fff" opacity="0.75" />
+    <path d="M112 170c12-18 24-28 38-28s26 10 38 28c-10 22-22 34-38 34s-28-12-38-34z" fill="url(#dress)" />
+
+    <!-- arms -->
+    <path d="M105 190c-18 12-26 28-28 44" fill="none" stroke="#ffd1b8" stroke-width="16" stroke-linecap="round" />
+    <path d="M195 190c18 12 26 28 28 44" fill="none" stroke="#ffd1b8" stroke-width="16" stroke-linecap="round" />
+
+    <!-- skirt -->
+    <path
+      d="M86 220c16-14 36-22 64-22s48 8 64 22c-6 62-40 136-64 136s-58-74-64-136z"
+      fill="url(#dress)"
+    />
+    <path
+      d="M112 244c10-8 22-12 38-12s28 4 38 12c-6 44-24 96-38 96s-32-52-38-96z"
+      fill="#fff"
+      opacity="0.25"
+    />
+
+    <!-- legs -->
+    <path d="M132 326c-12 26-18 46-18 62" fill="none" stroke="#ffd1b8" stroke-width="16" stroke-linecap="round" />
+    <path d="M168 326c12 26 18 46 18 62" fill="none" stroke="#ffd1b8" stroke-width="16" stroke-linecap="round" />
+
+    <!-- shoes -->
+    <path d="M100 392c18 8 34 8 46 0" fill="none" stroke="#ff4b9a" stroke-width="12" stroke-linecap="round" />
+    <path d="M154 392c18 8 34 8 46 0" fill="none" stroke="#ff4b9a" stroke-width="12" stroke-linecap="round" />
+  </g>
+</svg>
+
