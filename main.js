@@ -348,32 +348,6 @@ function bias01(value01, power) {
   return 1 - Math.pow(1 - v, power)
 }
 
-function iconSvg(type) {
-  const common = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
-  switch (type) {
-    case 'princess':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M4 9l4 3 4-6 4 6 4-3v9H4z"/><path ${common} d="M6 18h12"/></svg>`
-    case 'doctor':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 5v14"/><path ${common} d="M5 12h14"/></svg>`
-    case 'astronaut':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle ${common} cx="12" cy="11" r="6"/><path ${common} d="M8 20h8"/></svg>`
-    case 'model':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 3l7 9-7 9-7-9z"/></svg>`
-    case 'rockstar':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg>`
-    case 'chef':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M7 9c-2 0-3-1-3-3 0-2 2-4 4-3 1-2 5-2 6 0 2-1 4 1 4 3 0 2-1 3-3 3"/><path ${common} d="M7 9v11h10V9"/></svg>`
-    case 'dancer':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M14 3v9a3 3 0 1 1-2-2.83"/><path ${common} d="M14 3h6"/></svg>`
-    case 'diver':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M3 15c3-3 6 3 9 0s6 3 9 0"/><path ${common} d="M3 19c3-3 6 3 9 0s6 3 9 0"/></svg>`
-    case 'fairy':
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M4 14c4-1 4-6 8-6s4 5 8 6"/><path ${common} d="M12 3v18"/><path ${common} d="M9 6l3 3 3-3"/></svg>`
-    default:
-      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path ${common} d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.5-7 10-7 10z"/></svg>`
-  }
-}
-
 function generateDolls(boardW, boardH, cfg, rng) {
   const { sizes } = computeSizes(boardW)
   const dolls = []
@@ -481,17 +455,7 @@ function renderDolls() {
     img.alt = d.label
     img.draggable = false
 
-    const badge = document.createElement('div')
-    badge.className = 'badge'
-    badge.textContent = d.label
-
-    const typeIcon = document.createElement('div')
-    typeIcon.className = 'type-icon'
-    typeIcon.innerHTML = iconSvg(d.type)
-
     el.appendChild(img)
-    el.appendChild(badge)
-    el.appendChild(typeIcon)
     frag.appendChild(el)
   }
 

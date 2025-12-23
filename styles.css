@@ -42,7 +42,8 @@ body {
     sans-serif;
   background: radial-gradient(circle at 20% 0%, var(--bg0), var(--bg1) 40%, var(--bg2) 100%);
   color: var(--text);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .app::before {
@@ -59,7 +60,7 @@ body {
 }
 
 .app {
-  height: 100%;
+  min-height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr auto;
   max-width: var(--maxw);
@@ -212,7 +213,7 @@ body {
 
 .board {
   position: relative;
-  height: min(72vh, 720px);
+  height: clamp(460px, 66vh, 760px);
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -256,46 +257,13 @@ body {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
-  outline: 1px solid rgba(255, 255, 255, 0.22);
 }
 
-.doll .badge {
-  position: absolute;
-  left: 50%;
-  top: 6px;
-  transform: translateX(-50%);
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  color: #fff;
-  background: rgba(255, 119, 183, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
+.doll .badge,
 .doll .type-icon {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(255, 63, 140, 0.18);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
-  color: rgba(255, 63, 140, 0.9);
-  pointer-events: none;
-}
-
-.doll .type-icon svg {
-  width: 18px;
-  height: 18px;
-  display: block;
+  display: none;
 }
 
 .doll.blocked {
@@ -313,15 +281,15 @@ body {
 }
 
 .doll.visible .img {
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(255, 75, 154, 0.18);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
 }
 
 .doll.visible::after {
   content: '';
   position: absolute;
-  inset: -10px;
-  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 65%);
-  opacity: 0.75;
+  inset: -12px;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 66%);
+  opacity: 0.6;
   pointer-events: none;
 }
 

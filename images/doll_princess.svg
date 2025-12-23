@@ -1,59 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768">
   <defs>
-    <linearGradient id="gown" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff4fd6" />
-      <stop offset="0.55" stop-color="#ff79f0" />
-      <stop offset="1" stop-color="#ffe1fb" />
-    </linearGradient>
-    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8a4b12" />
-      <stop offset="1" stop-color="#f0c255" />
-    </linearGradient>
     <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000" flood-opacity="0.18" />
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity="0.22" />
     </filter>
+    <radialGradient id="skin" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffe6d6" />
+      <stop offset="0.55" stop-color="#ffd0b8" />
+      <stop offset="1" stop-color="#f6b99e" />
+    </radialGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7a3b10" />
+      <stop offset="0.55" stop-color="#e9b14a" />
+      <stop offset="1" stop-color="#fff0b6" />
+    </linearGradient>
+    <linearGradient id="gown" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff36c8" />
+      <stop offset="0.55" stop-color="#ff7af0" />
+      <stop offset="1" stop-color="#ffe5fb" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1ad" />
+      <stop offset="0.55" stop-color="#ffd86b" />
+      <stop offset="1" stop-color="#c27a1a" />
+    </linearGradient>
   </defs>
 
   <g filter="url(#ds)">
-    <ellipse cx="150" cy="378" rx="104" ry="20" fill="#000" opacity="0.10" />
+    <ellipse cx="256" cy="708" rx="168" ry="26" fill="#000" opacity="0.10" />
 
     <!-- crown -->
-    <path d="M110 66l14 22 26-26 26 26 14-22 4 34H106z" fill="#ffd86b" />
-    <circle cx="150" cy="70" r="6" fill="#fff1ad" />
-    <circle cx="124" cy="82" r="5" fill="#fff1ad" />
-    <circle cx="176" cy="82" r="5" fill="#fff1ad" />
+    <path d="M160 138l26 42 70-68 70 68 26-42 10 70H150z" fill="url(#gold)" />
+    <circle cx="256" cy="138" r="12" fill="#fff8d1" opacity="0.95" />
+    <circle cx="196" cy="168" r="10" fill="#fff8d1" opacity="0.92" />
+    <circle cx="316" cy="168" r="10" fill="#fff8d1" opacity="0.92" />
 
     <!-- hair -->
-    <path d="M82 98c8-40 40-66 68-66s60 26 68 66c-12-12-30-20-68-20s-56 8-68 20z" fill="url(#hair)" />
-    <path d="M70 130c14-44 44-66 80-66s66 22 80 66c-16-18-36-26-80-26s-64 8-80 26z" fill="url(#hair)" opacity="0.95" />
+    <path
+      d="M118 246c16-98 92-162 138-162s122 64 138 162c-42-38-86-56-138-56s-96 18-138 56z"
+      fill="url(#hair)"
+    />
+    <path
+      d="M92 314c26-130 118-198 164-198s138 68 164 198c-58-66-106-82-164-82s-106 16-164 82z"
+      fill="url(#hair)"
+      opacity="0.94"
+    />
 
     <!-- head -->
-    <circle cx="150" cy="128" r="44" fill="#ffd1b8" />
-    <circle cx="132" cy="126" r="5" fill="#2a1b1b" opacity="0.9" />
-    <circle cx="168" cy="126" r="5" fill="#2a1b1b" opacity="0.9" />
-    <path d="M136 146c12 12 26 12 28 0" fill="none" stroke="#c76a6a" stroke-width="4.5" stroke-linecap="round" />
-    <circle cx="120" cy="138" r="8" fill="#ff9db9" opacity="0.32" />
-    <circle cx="180" cy="138" r="8" fill="#ff9db9" opacity="0.32" />
+    <circle cx="256" cy="308" r="82" fill="url(#skin)" />
+    <ellipse cx="222" cy="318" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <ellipse cx="290" cy="318" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <circle cx="228" cy="314" r="6" fill="#fff" opacity="0.9" />
+    <circle cx="296" cy="314" r="6" fill="#fff" opacity="0.9" />
+    <path d="M244 342c10 10 24 10 24 0" fill="none" stroke="#c06a70" stroke-width="8" stroke-linecap="round" />
+    <circle cx="206" cy="346" r="14" fill="#ff8fb6" opacity="0.18" />
+    <circle cx="306" cy="346" r="14" fill="#ff8fb6" opacity="0.18" />
+
+    <!-- neck -->
+    <path d="M232 388c6 28 10 44 24 44s18-16 24-44" fill="url(#skin)" />
 
     <!-- sleeves -->
-    <path d="M95 198c-16 8-28 18-34 36" fill="none" stroke="#ffe1fb" stroke-width="18" stroke-linecap="round" />
-    <path d="M205 198c16 8 28 18 34 36" fill="none" stroke="#ffe1fb" stroke-width="18" stroke-linecap="round" />
+    <path d="M160 458c-56 18-98 62-110 128" fill="none" stroke="#ffe5fb" stroke-width="26" stroke-linecap="round" opacity="0.85" />
+    <path d="M352 458c56 18 98 62 110 128" fill="none" stroke="#ffe5fb" stroke-width="26" stroke-linecap="round" opacity="0.85" />
 
     <!-- bodice -->
-    <path d="M112 192c12-22 24-34 38-34s26 12 38 34c-10 24-22 38-38 38s-28-14-38-38z" fill="url(#gown)" />
-    <path d="M132 182h36" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity="0.35" />
+    <path
+      d="M170 462c22-56 50-84 86-84s64 28 86 84c-16 54-48 96-86 96s-70-42-86-96z"
+      fill="url(#gown)"
+    />
+    <path d="M214 450h84" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity="0.22" />
 
     <!-- big skirt -->
-    <path d="M44 244c26-30 62-48 106-48s80 18 106 48c-8 74-62 154-106 154S52 318 44 244z" fill="url(#gown)" />
-    <path d="M78 260c20-22 46-34 72-34s52 12 72 34c-10 56-42 116-72 116s-62-60-72-116z" fill="#fff" opacity="0.22" />
+    <path
+      d="M64 520c60-60 126-90 192-90s132 30 192 90c-18 144-132 248-192 248S82 664 64 520z"
+      fill="url(#gown)"
+    />
+    <path
+      d="M118 548c44-44 92-66 138-66s94 22 138 66c-20 114-88 198-138 198S138 662 118 548z"
+      fill="#fff"
+      opacity="0.14"
+    />
 
     <!-- sparkles -->
     <g fill="#fff6cc" opacity="0.9">
-      <circle cx="90" cy="284" r="4" />
-      <circle cx="210" cy="286" r="4" />
-      <circle cx="150" cy="310" r="4.5" />
-      <circle cx="120" cy="338" r="4" />
-      <circle cx="186" cy="336" r="4" />
+      <circle cx="152" cy="572" r="7" />
+      <circle cx="360" cy="572" r="7" />
+      <circle cx="256" cy="608" r="8" />
+      <circle cx="206" cy="654" r="7" />
+      <circle cx="306" cy="654" r="7" />
     </g>
   </g>
 </svg>
