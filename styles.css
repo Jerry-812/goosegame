@@ -1,0 +1,331 @@
+:root {
+  --bg0: #ffeaf4;
+  --bg1: #ffd2e7;
+  --bg2: #ffc1df;
+  --hot: #ff4b9a;
+  --hot2: #ff77b7;
+  --text: rgba(255, 255, 255, 0.95);
+  --glass: rgba(255, 255, 255, 0.18);
+  --border: rgba(255, 255, 255, 0.35);
+  --shadow: 0 14px 36px rgba(0, 0, 0, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    Arial,
+    sans-serif;
+  background: radial-gradient(circle at 20% 0%, var(--bg0), var(--bg1) 40%, var(--bg2) 100%);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.header {
+  padding: calc(14px + env(safe-area-inset-top)) 14px 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.pill {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 119, 183, 0.34);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 26px rgba(255, 75, 154, 0.12);
+  backdrop-filter: blur(10px);
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  min-width: 110px;
+}
+
+.pill-label {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.pill-value {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.pill-value .unit {
+  font-size: 13px;
+  margin-left: 2px;
+  opacity: 0.9;
+}
+
+.pill.danger {
+  background: rgba(255, 71, 115, 0.46);
+  animation: pulse 1s infinite;
+}
+
+.btn {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.primary {
+  background: var(--hot);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  z-index: 200000;
+}
+
+.board-wrap {
+  padding: 0 14px 12px;
+}
+
+.board {
+  position: relative;
+  height: min(72vh, 720px);
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
+  box-shadow: var(--shadow);
+  touch-action: manipulation;
+}
+
+.pot {
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 100%;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.doll {
+  position: absolute;
+  transform-origin: 50% 60%;
+  will-change: transform, opacity;
+  transform: rotate(var(--rot, 0deg));
+}
+
+.doll .img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+}
+
+.doll .badge {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  transform: translateX(-50%);
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(255, 119, 183, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.doll.blocked {
+  opacity: 0.35;
+  filter: saturate(0.8);
+}
+
+.doll.visible {
+  opacity: 1;
+}
+
+.doll.pressed {
+  transform: rotate(var(--rot, 0deg)) scale(1.05);
+  transition: transform 120ms ease-out;
+}
+
+.tray {
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.18);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+.tray-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+}
+
+.tray-sub {
+  opacity: 0.9;
+  font-weight: 700;
+}
+
+.tray-slots {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.slot {
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: rgba(255, 119, 183, 0.16);
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.slot.filled {
+  background: rgba(255, 255, 255, 0.12);
+  border-style: solid;
+}
+
+.slot img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.merge-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 60%),
+    radial-gradient(circle at 22% 30%, rgba(255, 246, 204, 0.72), rgba(255, 246, 204, 0) 56%),
+    radial-gradient(circle at 70% 40%, rgba(255, 214, 240, 0.84), rgba(255, 214, 240, 0) 56%);
+  animation: flash 420ms ease-out forwards;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.dialog {
+  width: min(520px, 100%);
+  border-radius: 18px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
+  color: #ff3f8c;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.22);
+}
+
+.dialog-title {
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.dialog-sub {
+  margin-top: 10px;
+  font-size: 16px;
+  color: rgba(255, 63, 140, 0.86);
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.help-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 420px) {
+  .pill {
+    min-width: 96px;
+    padding: 9px 10px;
+  }
+  .tray-slots {
+    gap: 6px;
+  }
+}

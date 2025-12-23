@@ -1,0 +1,9 @@
+<view
+  class="doll {{visible ? 'is-visible' : 'is-blocked'}}"
+  style="left: {{x}}px; top: {{y}}px; z-index: {{z}}; transform: rotate({{rotate}}deg);"
+  bindtap="onTap"
+>
+  <image class="doll-image" src="{{image}}" mode="widthFix" style="width: {{size}}px;" />
+  <view class="doll-badge">{{label}}</view>
+</view>
+

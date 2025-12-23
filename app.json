@@ -1,0 +1,13 @@
+{
+  "pages": ["pages/game/game"],
+  "window": {
+    "navigationBarTitleText": "芭比消除",
+    "navigationBarBackgroundColor": "#FF77B7",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#FFE7F2",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
+
