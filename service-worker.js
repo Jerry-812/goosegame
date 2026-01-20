@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goosegame-v5'
+const CACHE_NAME = 'goosegame-v19'
 
 const CORE_ASSETS = [
   './',
@@ -9,17 +9,31 @@ const CORE_ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/maskable-512.png',
-  './images/pot.svg',
-  './images/doll_classic.svg',
-  './images/doll_princess.svg',
-  './images/doll_doctor.svg',
-  './images/doll_astronaut.svg',
-  './images/doll_model.svg',
-  './images/doll_rockstar.svg',
-  './images/doll_chef.svg',
-  './images/doll_dancer.svg',
-  './images/doll_diver.svg',
-  './images/doll_fairy.svg'
+  './vendor/three/three.module.js',
+  './vendor/three/examples/jsm/postprocessing/EffectComposer.js',
+  './vendor/three/examples/jsm/postprocessing/RenderPass.js',
+  './vendor/three/examples/jsm/postprocessing/OutlinePass.js',
+  './vendor/three/examples/jsm/postprocessing/ShaderPass.js',
+  './vendor/three/examples/jsm/postprocessing/Pass.js',
+  './vendor/three/examples/jsm/postprocessing/MaskPass.js',
+  './vendor/three/examples/jsm/shaders/FXAAShader.js',
+  './vendor/three/examples/jsm/shaders/CopyShader.js',
+  './vendor/cannon-es/cannon-es.js',
+  './images/decor_palette.svg',
+  './images/decor_brushes.svg',
+  './images/decor_powder.svg',
+  './images/item_kitchen_kettle.svg',
+  './images/item_kitchen_pan.svg',
+  './images/item_kitchen_spatula.svg',
+  './images/item_kitchen_mug.svg',
+  './images/item_desk_notebook.svg',
+  './images/item_desk_ruler.svg',
+  './images/item_desk_stapler.svg',
+  './images/item_desk_tape.svg',
+  './images/item_camp_canteen.svg',
+  './images/item_camp_flashlight.svg',
+  './images/item_camp_compass.svg',
+  './images/item_camp_can.svg'
 ]
 
 self.addEventListener('install', (event) => {

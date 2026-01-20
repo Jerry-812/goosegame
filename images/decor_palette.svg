@@ -1,0 +1,16 @@
+<svg width="240" height="180" viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pal-base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f4f4"/>
+      <stop offset="1" stop-color="#e2e2e2"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="160" rx="90" ry="10" fill="#cda8b3" opacity="0.35"/>
+  <rect x="24" y="28" width="192" height="126" rx="22" fill="url(#pal-base)" stroke="#ffffff" stroke-width="4"/>
+  <circle cx="70" cy="70" r="16" fill="#ff8aa5"/>
+  <circle cx="120" cy="70" r="16" fill="#ffd384"/>
+  <circle cx="170" cy="70" r="16" fill="#7fd4ff"/>
+  <circle cx="70" cy="118" r="16" fill="#a9f2b0"/>
+  <circle cx="120" cy="118" r="16" fill="#b9a6ff"/>
+  <circle cx="170" cy="118" r="16" fill="#ffb36f"/>
+</svg>

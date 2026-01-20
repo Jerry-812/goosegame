@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#ff4b9a" />
-    <title>芭比消除</title>
-    <meta name="description" content="芭比娃娃主题合并消除小游戏：点击可见娃娃进栏，三个相同自动消除，60 秒内通关。" />
-    <meta property="og:title" content="芭比消除" />
-    <meta property="og:description" content="点击可见娃娃进栏，三个相同自动消除，60 秒内通关。" />
+    <meta name="theme-color" content="#f2708c" />
+    <title>日常收纳消除</title>
+    <meta name="description" content="生活小物主题合并消除小游戏：点击可见物品进栏，三个相同自动消除，限时挑战。" />
+    <meta property="og:title" content="日常收纳消除" />
+    <meta property="og:description" content="生活小物主题合并消除小游戏：点击可见物品进栏，三个相同自动消除，限时挑战。" />
     <meta property="og:image" content="./icons/icon-512.png" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary" />
@@ -20,58 +20,51 @@
   </head>
   <body>
     <main class="app">
-      <header class="header">
-        <div class="brand" aria-label="游戏标题">
-          <img class="brand-logo" src="./icons/icon-192.png" alt="" />
-          <div class="brand-text">
-            <div class="brand-title">芭比消除</div>
-            <div class="brand-sub">三合消除 · 60 秒挑战</div>
-          </div>
+      <header class="topbar">
+        <button class="icon-btn" id="pauseBtn" type="button" aria-label="暂停">
+          <span class="icon">||</span>
+        </button>
+        <div class="timer-pill" id="timerPill" aria-label="倒计时">
+          <span class="timer-icon">TIME</span>
+          <span id="timer">60</span>
         </div>
-
-        <div class="stats" aria-label="游戏信息">
-          <div class="pill">
-            <div class="pill-label">得分</div>
-            <div class="pill-value" id="score">0</div>
-          </div>
-          <div class="pill" id="timerPill">
-            <div class="pill-label">时间</div>
-            <div class="pill-value"><span id="timer">60</span><span class="unit">s</span></div>
-          </div>
-          <div class="pill">
-            <div class="pill-label">剩余</div>
-            <div class="pill-value"><span id="remain">0</span></div>
-          </div>
-          <div class="pill">
-            <div class="pill-label">最佳</div>
-            <div class="pill-value" id="best">0</div>
-          </div>
-        </div>
-
-        <div class="controls" aria-label="操作按钮">
-          <button class="btn icon" id="soundBtn" type="button" aria-label="声音开关" title="声音">
-            <span class="icon" aria-hidden="true">🔊</span>
-          </button>
-          <button class="btn" id="shareBtn" type="button">分享</button>
-          <button class="btn" id="helpBtn" type="button" aria-label="玩法说明">玩法</button>
-          <button class="btn primary" id="restartBtn" type="button">重开</button>
-        </div>
+        <button class="icon-btn" id="menuBtn" type="button" aria-label="菜单">
+          <span class="icon">...</span>
+        </button>
       </header>
 
       <section class="board-wrap">
+        <div class="decor">
+          <img class="decor-palette" src="./images/decor_palette.svg" alt="" />
+          <img class="decor-brushes" src="./images/decor_brushes.svg" alt="" />
+          <img class="decor-powder" src="./images/decor_powder.svg" alt="" />
+        </div>
         <div class="board" id="board" aria-label="游戏区域" role="application">
-          <img class="pot" src="./images/pot.svg" alt="" />
+          <canvas class="scene" id="scene"></canvas>
           <div class="merge-fx" id="mergeFx" hidden></div>
           <canvas class="confetti" id="confetti" width="1" height="1" hidden></canvas>
         </div>
       </section>
 
       <footer class="tray" aria-label="待合成栏">
-        <div class="tray-title">
-          <div>待合成栏</div>
-          <div class="tray-sub"><span id="trayCount">0</span>/<span id="trayMax">7</span></div>
-        </div>
         <div class="tray-slots" id="traySlots"></div>
+        <div class="tools" aria-label="道具栏">
+          <button class="tool-btn" id="toolRemove" type="button">
+            <span class="tool-icon">OUT</span>
+            <span class="tool-label">移出</span>
+            <span class="tool-count" id="toolRemoveCount">2</span>
+          </button>
+          <button class="tool-btn" id="toolMatch" type="button">
+            <span class="tool-icon">MAG</span>
+            <span class="tool-label">凑齐</span>
+            <span class="tool-count" id="toolMatchCount">2</span>
+          </button>
+          <button class="tool-btn" id="toolShuffle" type="button">
+            <span class="tool-icon">MIX</span>
+            <span class="tool-label">打乱</span>
+            <span class="tool-count" id="toolShuffleCount">1</span>
+          </button>
+        </div>
       </footer>
 
       <div class="overlay" id="overlay" hidden>
@@ -87,7 +80,7 @@
 
       <div class="overlay" id="help" hidden>
         <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
-          <div class="dialog-title" id="helpTitle">玩法</div>
+          <div class="dialog-title" id="helpTitle">玩法说明</div>
           <div class="dialog-sub">
             <div class="mode">
               <div class="mode-title">难度</div>
@@ -105,17 +98,41 @@
                   <span>高手</span>
                 </label>
               </div>
-              <div class="mode-sub" id="modeDesc">30 个娃娃 · 60 秒 · 7 格待合成栏</div>
+              <div class="mode-sub" id="modeDesc">30 个物品 · 60 秒 · 7 格待合成栏</div>
             </div>
             <ul class="help-list">
-              <li>只能点击“最上层可见”的娃娃（被遮挡的会半透明且不可点）。</li>
+              <li>只能点击“最上层可见”的物品（被遮挡会变暗且不可点）。</li>
               <li>点击后进入底部待合成栏；同类型累计 3 个会自动消除并加分。</li>
-              <li>60 秒内清空所有娃娃获胜；待合成栏放满且无法继续放置则失败。</li>
+              <li>限时清空所有物品获胜；待合成栏放满且无法继续放置则失败。</li>
+              <li>道具“移出”移走一个栏内物品，“凑齐”吸来同类，“打乱”洗牌。</li>
             </ul>
           </div>
           <div class="dialog-actions">
             <button class="btn" id="copySeedBtn" type="button">复制局号</button>
             <button class="btn primary" id="closeHelpBtn" type="button">开始</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="pause" hidden>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+          <div class="dialog-title" id="pauseTitle">暂停中</div>
+          <div class="dialog-sub">
+            <div class="pause-row">
+              <span>声音</span>
+              <button class="btn icon" id="soundBtn" type="button" aria-label="声音开关">
+                <span class="icon" aria-hidden="true">ON</span>
+              </button>
+            </div>
+            <div class="pause-stats">
+              <div>得分：<span id="score">0</span></div>
+              <div>最佳：<span id="best">0</span></div>
+              <div>剩余物品：<span id="remain">0</span></div>
+            </div>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" id="restartBtn" type="button">重开</button>
+            <button class="btn primary" id="resumeBtn" type="button">继续</button>
           </div>
         </div>
       </div>
