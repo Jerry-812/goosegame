@@ -50,6 +50,26 @@ const COLLISION_SPECS = {
   camp_can: { kind: 'sphere', r: 0.35 },
 }
 
+const TOOL_LIMITS = {
+  remove: 4,
+  match: 4,
+  shuffle: 2,
+}
+
+const TOOL_LABELS = {
+  remove: '移出',
+  match: '凑齐',
+  shuffle: '打乱',
+}
+
+const PHYSICS_TUNING = {
+  centerPull: 0.0012,
+  swirl: 0.0007,
+  edgePush: 0.0022,
+  activeBoost: 1.4,
+  settleWindowMs: 1300,
+}
+
 function getCollisionSpec(type, w, h) {
   const spec = COLLISION_SPECS[type] || { kind: 'sphere', r: 0.36 }
   if (spec.kind === 'box') {
@@ -215,6 +235,11 @@ const ui = {
   remain: qs('#remain'),
   timer: qs('#timer'),
   timerPill: qs('#timerPill'),
+  comboPill: qs('#comboPill'),
+  comboText: qs('#comboText'),
+  flowMeter: qs('#flowMeter'),
+  flowFill: qs('#flowFill'),
+  flowText: qs('#flowText'),
   board: qs('#board'),
   traySlots: qs('#traySlots'),
   mergeFx: qs('#mergeFx'),
@@ -279,6 +304,8 @@ const state = {
   sound: null,
   lastMergeAt: 0,
   mergeCombo: 0,
+  flow: 0,
+  lastActionAt: 0,
   tools: {
     remove: 2,
     match: 2,
@@ -432,8 +459,8 @@ function initPhysics() {
   const wallMat = new CANNON.Material('wall')
   world.addContactMaterial(
     new CANNON.ContactMaterial(itemMat, itemMat, {
-      friction: 0.8,
-      restitution: 0.0,
+      friction: 0.65,
+      restitution: 0.08,
       contactEquationStiffness: 1e7,
       contactEquationRelaxation: 4,
       frictionEquationStiffness: 1e7,
@@ -442,8 +469,8 @@ function initPhysics() {
   )
   world.addContactMaterial(
     new CANNON.ContactMaterial(itemMat, wallMat, {
-      friction: 0.85,
-      restitution: 0.0,
+      friction: 0.72,
+      restitution: 0.05,
       contactEquationStiffness: 1e7,
       contactEquationRelaxation: 4,
       frictionEquationStiffness: 1e7,
@@ -652,7 +679,13 @@ function animateThree() {
 }
 
 function makeMaterial(color, roughness = 0.35, metalness = 0.15) {
-  const mat = new THREE.MeshStandardMaterial({ color, roughness, metalness })
+  const mat = new THREE.MeshPhysicalMaterial({
+    color,
+    roughness,
+    metalness,
+    clearcoat: 0.4,
+    clearcoatRoughness: 0.2,
+  })
   mat.userData.shared = true
   return mat
 }
@@ -901,6 +934,27 @@ function rebuildMeshes() {
   syncMeshes()
 }
 
+function applyBowlForces(bowlCenterZ, boost = 1) {
+  const maxRadius = Math.max(1, state.containerRadius || 1)
+  for (const doll of state.dolls) {
+    const body = doll.body
+    if (!body) continue
+    const dx = body.position.x
+    const dz = body.position.z - bowlCenterZ
+    const dist = Math.hypot(dx, dz) || 1
+    const normalized = clamp(dist / maxRadius, 0, 1)
+    const pullStrength = PHYSICS_TUNING.centerPull * (0.4 + normalized) * boost
+    const edgeBoost = PHYSICS_TUNING.edgePush * Math.max(0, normalized - 0.7) * boost
+    const pull = -(pullStrength + edgeBoost) * dist
+    const swirlStrength = PHYSICS_TUNING.swirl * (1 - normalized) * boost
+    const nx = dx / dist
+    const nz = dz / dist
+    const forceX = nx * pull + -nz * swirlStrength * dist
+    const forceZ = nz * pull + nx * swirlStrength * dist
+    body.applyForce(new CANNON.Vec3(forceX, 0, forceZ), body.position)
+  }
+}
+
 function updateMeshes() {
   if (!three.ready) return
   if (!physics.ready) return
@@ -914,12 +968,17 @@ function updateMeshes() {
   const { centerY, radius } = getBowlMetrics(width, height)
   const bowlCenterZ = centerY - height / 2
   if (!state.containerRadius) state.containerRadius = radius
-  const physicsActive = input.dragging || now - input.lastPushAt < 360
+  const physicsActive =
+    input.dragging ||
+    now - input.lastPushAt < 360 ||
+    now - state.lastActionAt < PHYSICS_TUNING.settleWindowMs
 
   if (physicsActive) {
     const step = 1 / 60
     physics.accumulator += dt
     while (physics.accumulator >= step) {
+      const boost = input.dragging ? PHYSICS_TUNING.activeBoost : 1
+      applyBowlForces(bowlCenterZ, boost)
       physics.world.step(step)
       physics.accumulator -= step
     }
@@ -1027,6 +1086,7 @@ function pushItemsAt(boardX, boardY, dx, dy) {
   const { radius } = getBowlMetrics(three.width, three.height)
   const range = Math.min(160, radius * 0.5)
   let pushed = false
+  const impulseScale = 0.0065
   for (const doll of state.dolls) {
     if (doll.animating) continue
     const cx = doll.x + doll.w / 2
@@ -1036,7 +1096,7 @@ function pushItemsAt(boardX, boardY, dx, dy) {
     const falloff = 1 - dist / range
     const body = doll.body
     if (!body) continue
-    const impulse = new CANNON.Vec3(dx * 0.0045 * falloff, 0, dy * 0.0045 * falloff)
+    const impulse = new CANNON.Vec3(dx * impulseScale * falloff, 0, dy * impulseScale * falloff)
     body.wakeUp()
     body.applyImpulse(impulse, body.position)
     pushed = true
@@ -1073,6 +1133,56 @@ function setBestUI(value) {
 
 function setRemainUI(value) {
   ui.remain.textContent = String(value)
+}
+
+function setComboUI(value) {
+  const comboValue = Math.max(0, value)
+  ui.comboText.textContent = `x${comboValue}`
+  ui.comboPill.classList.toggle('active', comboValue >= 2)
+}
+
+function setFlowUI(value) {
+  const v = clamp(Math.round(value), 0, 100)
+  ui.flowFill.style.width = `${v}%`
+  ui.flowText.textContent = `灵感 ${v}%`
+  ui.flowMeter.setAttribute('aria-valuenow', String(v))
+  ui.flowMeter.classList.toggle('ready', v >= 90)
+}
+
+function grantRandomTool() {
+  const options = Object.keys(TOOL_LIMITS).filter((key) => state.tools[key] < TOOL_LIMITS[key])
+  if (!options.length) return null
+  const pick = options[Math.floor(state.rng() * options.length)]
+  state.tools[pick] += 1
+  setToolUI()
+  return { key: pick, label: TOOL_LABELS[pick] }
+}
+
+function triggerFlowBurst() {
+  const bonusTime = 5
+  const beforeTimer = state.timer
+  state.timer = clamp(state.timer + bonusTime, 0, state.config.seconds)
+  if (state.timer !== beforeTimer) setTimerUI(state.timer)
+  const reward = grantRandomTool()
+  if (reward) {
+    toast(`灵感爆发 +${bonusTime}s · ${reward.label}+1`)
+    return
+  }
+  const bonusScore = 20
+  state.score += bonusScore
+  setScoreUI(state.score)
+  toast(`灵感爆发 +${bonusTime}s · 得分+${bonusScore}`)
+}
+
+function addFlow(amount) {
+  if (!Number.isFinite(amount)) return
+  state.flow += amount
+  while (state.flow >= 100) {
+    state.flow -= 100
+    triggerFlowBurst()
+  }
+  state.flow = clamp(state.flow, 0, 100)
+  setFlowUI(state.flow)
 }
 
 function getSelectedModeKey() {
@@ -1396,7 +1506,10 @@ function replenishBoard() {
   const remaining = getRemainingCount()
   const target = Math.min(state.maxVisible || remaining, remaining)
   const need = target - state.dolls.length
-  if (need > 0) spawnFromPool(need)
+  if (need > 0) {
+    spawnFromPool(need)
+    state.lastActionAt = performance.now()
+  }
 }
 
 function renderDolls() {
@@ -1421,6 +1534,10 @@ function startTimer() {
       state.sound.lose()
       endGame('时间到！', '再试一次吧～')
       return
+    }
+    if (state.mergeCombo > 0 && Date.now() - state.lastMergeAt > 2200) {
+      state.mergeCombo = 0
+      setComboUI(0)
     }
     setTimerUI(state.timer)
   }, 1000)
@@ -1612,6 +1729,7 @@ function useToolShuffle() {
   }
   applyBowlCompression()
   renderDolls()
+  state.lastActionAt = performance.now()
   toast('已重新打乱')
 }
 
@@ -1715,6 +1833,8 @@ async function pickDoll(dollId) {
     const add = Math.round(base * mult)
     state.score += add
     setScoreUI(state.score)
+    setComboUI(state.mergeCombo)
+    addFlow(24 + Math.min(24, state.mergeCombo * 6))
     showFloatScore(`+${add}${state.mergeCombo >= 2 ? ` 连消×${state.mergeCombo}` : ''}`)
 
     // remove from end to start
@@ -1768,6 +1888,7 @@ function resetGame(seed, modeKey) {
   state.pausedByHelp = false
   state.lastMergeAt = 0
   state.mergeCombo = 0
+  state.flow = 0
   state.totalItems = state.config.itemsPerType * DOLL_TYPES.length
   state.pool = []
   state.maxVisible = 0
@@ -1777,6 +1898,8 @@ function resetGame(seed, modeKey) {
 
   setScoreUI(state.score)
   setTimerUI(state.timer)
+  setComboUI(state.mergeCombo)
+  setFlowUI(state.flow)
   renderTray()
   setToolUI()
 
@@ -1789,6 +1912,7 @@ function resetGame(seed, modeKey) {
   replenishBoard()
   rebuildBodies()
   renderDolls()
+  state.lastActionAt = performance.now()
   startTimer()
 }
 
@@ -2019,6 +2143,8 @@ async function boot() {
   setRemainUI(0)
   setTimerUI(MODES[urlCfg.modeKey].seconds)
   setScoreUI(0)
+  setComboUI(0)
+  setFlowUI(0)
 
   bindEvents()
 

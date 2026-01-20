@@ -68,6 +68,12 @@ body {
   gap: 10px;
 }
 
+.status-center {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
 .icon-btn {
   width: 44px;
   height: 44px;
@@ -113,6 +119,67 @@ body {
   font-size: 12px;
   letter-spacing: 1px;
   opacity: 0.7;
+}
+
+.combo-pill {
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #7a2940;
+  font-weight: 800;
+  box-shadow: 0 8px 16px rgba(120, 60, 30, 0.15);
+  transition: transform 200ms ease, background 200ms ease;
+}
+
+.combo-pill.active {
+  background: linear-gradient(180deg, #fff4da, #ffd36a);
+  color: #5c2a18;
+  transform: translateY(-1px) scale(1.02);
+}
+
+.combo-label {
+  opacity: 0.75;
+}
+
+.flow-meter {
+  position: relative;
+  width: clamp(110px, 22vw, 160px);
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.flow-meter.ready {
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.08),
+    0 8px 18px rgba(255, 79, 108, 0.35);
+}
+
+.flow-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff77b7, #ff4b9a, #ffd36a);
+  transition: width 200ms ease;
+}
+
+.flow-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #6b2034;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
 }
 
 .board-wrap {
@@ -664,6 +731,12 @@ body {
   }
   .timer-pill {
     font-size: 18px;
+  }
+  .combo-pill {
+    font-size: 11px;
+  }
+  .flow-meter {
+    height: 14px;
   }
   .tray-slots {
     gap: 6px;
