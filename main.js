@@ -13,6 +13,9 @@ const STORAGE = {
 
 const APPROX_ASPECT = 1.1
 const ITEM_SCALE = 0.66
+const BLOCKED_OVERLAP_RATIO = 0.12
+const BLOCKED_DIM_OPACITY = 0.45
+const BLOCKED_CHECK_INTERVAL = 220
 
 const MODES = {
   easy: { key: 'easy', label: '轻松', seconds: 300, itemsPerType: 15, maxTray: 7, layerMax: 6 },
@@ -279,6 +282,7 @@ const state = {
   sound: null,
   lastMergeAt: 0,
   mergeCombo: 0,
+  lastBlockUpdate: 0,
   tools: {
     remove: 2,
     match: 2,
@@ -343,6 +347,14 @@ function setHelp(visible) {
 function setPause(visible) {
   ui.pause.hidden = !visible
   if (visible) setOutlineTarget(null)
+}
+
+function pauseGame(message = '') {
+  if (!state.running || state.busy) return
+  state.running = false
+  stopTimer()
+  setPause(true)
+  if (message) toast(message)
 }
 
 function initThree() {
@@ -849,7 +861,15 @@ function createItemMesh(doll) {
   group.userData.dollId = doll.id
   group.userData.type = doll.type
   group.traverse((child) => {
-    if (child.isMesh) child.castShadow = true
+    if (!child.isMesh) return
+    child.castShadow = true
+    if (child.material?.userData?.shared) {
+      child.material = child.material.clone()
+      child.material.userData.shared = false
+    }
+    if (child.userData.baseOpacity == null) {
+      child.userData.baseOpacity = Number.isFinite(child.material?.opacity) ? child.material.opacity : 1
+    }
   })
   return group
 }
@@ -982,6 +1002,7 @@ function updateMeshes() {
     const yaw = Number.isFinite(doll.visualYaw) ? doll.visualYaw : 0
     doll.mesh.rotation.set(tilt, yaw, 0)
   }
+  updateBlockedStates()
 }
 
 function raycastPointer(evt) {
@@ -993,13 +1014,17 @@ function raycastPointer(evt) {
   three.raycaster.setFromCamera(three.pointer, three.camera)
   const hits = three.raycaster.intersectObjects(three.itemsGroup.children, true)
   if (!hits.length) return null
-  let obj = hits[0].object
-  while (obj && !obj.userData.dollId) obj = obj.parent
-  if (!obj) return null
-  const dollId = obj.userData.dollId
-  const doll = state.dolls.find((d) => d.id === dollId)
-  if (!doll) return null
-  return { doll, object: obj }
+  for (const hit of hits) {
+    let obj = hit.object
+    while (obj && !obj.userData.dollId) obj = obj.parent
+    if (!obj) continue
+    const dollId = obj.userData.dollId
+    const doll = state.dolls.find((d) => d.id === dollId)
+    if (!doll) continue
+    if (isDollBlocked(doll)) continue
+    return { doll, object: obj }
+  }
+  return null
 }
 
 function screenToWorldOnPlane(clientX, clientY, planeY = 0) {
@@ -1404,6 +1429,66 @@ function renderDolls() {
   setOutlineTarget(null)
   syncMeshes()
   syncBodies()
+  updateBlockedStates(true)
+}
+
+function setMeshDimmed(mesh, dimmed) {
+  mesh.traverse((child) => {
+    if (!child.isMesh || !child.material) return
+    const baseOpacity =
+      child.userData.baseOpacity ?? (Number.isFinite(child.material.opacity) ? child.material.opacity : 1)
+    child.userData.baseOpacity = baseOpacity
+    child.material.transparent = dimmed || baseOpacity < 1
+    child.material.opacity = dimmed ? baseOpacity * BLOCKED_DIM_OPACITY : baseOpacity
+    child.material.needsUpdate = true
+  })
+}
+
+function getDollRect(doll) {
+  const margin = Math.max(6, Math.min(doll.w, doll.h) * 0.12)
+  return {
+    left: doll.x + margin,
+    right: doll.x + doll.w - margin,
+    top: doll.y + margin,
+    bottom: doll.y + doll.h - margin,
+  }
+}
+
+function isDollBlocked(doll) {
+  if (!doll || doll.animating) return false
+  if (!Number.isFinite(doll.x) || !Number.isFinite(doll.y)) return false
+  const baseLayer = Number.isFinite(doll.layer) ? doll.layer : 1
+  const rect = getDollRect(doll)
+  const area = Math.max(1, (rect.right - rect.left) * (rect.bottom - rect.top))
+  for (const other of state.dolls) {
+    if (other === doll || other.animating) continue
+    if (!other.mesh) continue
+    const otherLayer = Number.isFinite(other.layer) ? other.layer : 1
+    if (otherLayer <= baseLayer) continue
+    if (!Number.isFinite(other.x) || !Number.isFinite(other.y)) continue
+    const oRect = getDollRect(other)
+    const overlapX = Math.max(0, Math.min(rect.right, oRect.right) - Math.max(rect.left, oRect.left))
+    const overlapY = Math.max(0, Math.min(rect.bottom, oRect.bottom) - Math.max(rect.top, oRect.top))
+    if (overlapX <= 0 || overlapY <= 0) continue
+    const overlapArea = overlapX * overlapY
+    const oArea = Math.max(1, (oRect.right - oRect.left) * (oRect.bottom - oRect.top))
+    const minArea = Math.min(area, oArea)
+    if (overlapArea >= minArea * BLOCKED_OVERLAP_RATIO) return true
+  }
+  return false
+}
+
+function updateBlockedStates(force = false) {
+  if (!state.dolls.length) return
+  const now = performance.now()
+  if (!force && now - state.lastBlockUpdate < BLOCKED_CHECK_INTERVAL) return
+  state.lastBlockUpdate = now
+  for (const doll of state.dolls) {
+    const blocked = isDollBlocked(doll)
+    if (doll.blocked === blocked) continue
+    doll.blocked = blocked
+    if (doll.mesh) setMeshDimmed(doll.mesh, blocked)
+  }
 }
 
 function applyBowlCompression() {
@@ -1671,6 +1756,11 @@ async function pickDoll(dollId) {
   if (idx < 0) return
   const doll = state.dolls[idx]
 
+  if (isDollBlocked(doll)) {
+    toast('物品被遮挡，先移开上层')
+    return
+  }
+
   if (!canPlaceIntoTray(doll.type)) {
     state.sound.lose()
     endGame('栏已满', '待合成栏放不下新的物品了')
@@ -1768,6 +1858,7 @@ function resetGame(seed, modeKey) {
   state.pausedByHelp = false
   state.lastMergeAt = 0
   state.mergeCombo = 0
+  state.lastBlockUpdate = 0
   state.totalItems = state.config.itemsPerType * DOLL_TYPES.length
   state.pool = []
   state.maxVisible = 0
@@ -1835,10 +1926,7 @@ function bindEvents() {
   ui.againBtn.addEventListener('click', () => resetGame(makeSeed(), state.modeKey))
 
   ui.pauseBtn.addEventListener('click', () => {
-    if (!state.running || state.busy) return
-    state.running = false
-    stopTimer()
-    setPause(true)
+    pauseGame()
   })
 
   ui.resumeBtn.addEventListener('click', () => {
@@ -1964,6 +2052,13 @@ function bindEvents() {
   ui.board.addEventListener('pointercancel', () => {
     input.dragging = false
     input.lastBoard = null
+  })
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pauseGame('已自动暂停')
+  })
+  window.addEventListener('blur', () => {
+    if (!document.hidden) pauseGame('已自动暂停')
   })
 
   window.addEventListener('resize', () => {
