@@ -645,6 +645,9 @@ function resizeThree() {
   three.camera.up.set(0, 0, -1)
   three.camera.lookAt(0, 0, 0)
   three.camera.updateProjectionMatrix()
+  const { centerY, radius } = getBowlMetrics(width, height)
+  ui.board.style.setProperty('--bowl-size', `${radius * 2}px`)
+  ui.board.style.setProperty('--bowl-center-y', `${centerY}px`)
   if (three.fxaaPass) {
     three.fxaaPass.material.uniforms.resolution.value.set(1 / width, 1 / height)
   }
@@ -734,7 +737,7 @@ function createItemMesh(doll) {
   const w = doll.w
   const h = doll.h
   const base = Math.min(w, h)
-  const thickness = Math.max(10, base * 0.35)
+  const thickness = Math.max(8, base * 0.28)
 
   const pink = MATERIALS.pink
   const rose = MATERIALS.rose

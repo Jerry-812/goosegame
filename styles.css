@@ -165,6 +165,8 @@ body {
     var(--shadow);
   overflow: hidden;
   touch-action: manipulation;
+  --bowl-size: 86%;
+  --bowl-center-y: 52%;
 }
 
 .scene {
@@ -189,9 +191,9 @@ body {
   content: '';
   position: absolute;
   left: 50%;
-  top: 52%;
-  width: min(86%, 86vh);
-  height: min(86%, 86vh);
+  top: var(--bowl-center-y);
+  width: var(--bowl-size);
+  height: var(--bowl-size);
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background:

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goosegame-v19'
+const CACHE_NAME = 'goosegame-v20'
 
 const CORE_ASSETS = [
   './',
