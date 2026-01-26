@@ -16,11 +16,13 @@ const ITEM_SCALE = 0.66
 const BLOCKED_OVERLAP_RATIO = 0.12
 const BLOCKED_DIM_OPACITY = 0.45
 const BLOCKED_CHECK_INTERVAL = 220
+const URGENCY_TIMER_THRESHOLD = 10
+const BONUS_SCORE_PER_SECOND = 2
 
 const MODES = {
   easy: { key: 'easy', label: '轻松', seconds: 300, itemsPerType: 15, maxTray: 7, layerMax: 6 },
   normal: { key: 'normal', label: '标准', seconds: 375, itemsPerType: 25, maxTray: 7, layerMax: 7 },
-  hard: { key: 'hard', label: '高手', seconds: 375, itemsPerType: 30, maxTray: 6, layerMax: 8 },
+  hard: { key: 'hard', label: '高手', seconds: 375, itemsPerType: 30, maxTray: 7, layerMax: 8 },
 }
 
 const DOLL_TYPES = [
@@ -282,7 +284,10 @@ const state = {
   sound: null,
   lastMergeAt: 0,
   mergeCombo: 0,
+  mergeCount: 0,
   lastBlockUpdate: 0,
+  hoveredDollId: null,
+  hoveredObject: null,
   tools: {
     remove: 2,
     match: 2,
@@ -346,7 +351,7 @@ function setHelp(visible) {
 
 function setPause(visible) {
   ui.pause.hidden = !visible
-  if (visible) setOutlineTarget(null)
+  if (visible) setHoverTarget(null)
 }
 
 function pauseGame(message = '') {
@@ -1004,6 +1009,10 @@ function updateMeshes() {
     const tilt = Number.isFinite(doll.tilt) ? doll.tilt : 0
     const yaw = Number.isFinite(doll.visualYaw) ? doll.visualYaw : 0
     doll.mesh.rotation.set(tilt, yaw, 0)
+    const targetScale = doll.id === state.hoveredDollId ? 1.06 : 1
+    const currentScale = doll.mesh.scale.x || 1
+    const nextScale = currentScale + (targetScale - currentScale) * 0.2
+    doll.mesh.scale.setScalar(nextScale)
   }
   updateBlockedStates()
 }
@@ -1081,6 +1090,18 @@ function setOutlineTarget(obj) {
   three.outlinePass.selectedObjects = [obj]
 }
 
+function updateClickableOutline() {
+  if (!three.outlinePass) return
+  if (state.hoveredObject) {
+    three.outlinePass.edgeStrength = 4.6
+    three.outlinePass.selectedObjects = [state.hoveredObject]
+    return
+  }
+  const clickable = state.dolls.filter((d) => d.mesh && !d.blocked && !d.animating).map((d) => d.mesh)
+  three.outlinePass.edgeStrength = clickable.length ? 2.6 : 0
+  three.outlinePass.selectedObjects = clickable
+}
+
 function showLoading(visible, text = '') {
   ui.loading.hidden = !visible
   if (text) ui.loadingText.textContent = text
@@ -1135,7 +1156,7 @@ function renderTray({ popIndex = -1 } = {}) {
   const slots = [...ui.traySlots.querySelectorAll('.slot')]
   slots.forEach((slot, i) => {
     slot.classList.toggle('filled', Boolean(state.selected[i]))
-    slot.classList.remove('merge', 'pop')
+    slot.classList.remove('merge', 'pop', 'preview')
     slot.innerHTML = ''
     const item = state.selected[i]
     if (item) {
@@ -1151,6 +1172,35 @@ function renderTray({ popIndex = -1 } = {}) {
     window.clearTimeout(renderTray._t)
     renderTray._t = window.setTimeout(() => slots[popIndex]?.classList.remove('pop'), 260)
   }
+}
+
+function setTrayPreview(nextType) {
+  const slots = [...ui.traySlots.querySelectorAll('.slot')]
+  slots.forEach((slot) => slot.classList.remove('preview'))
+  if (!nextType) return
+  const matches = []
+  state.selected.forEach((item, index) => {
+    if (item.type === nextType) matches.push(index)
+  })
+  if (matches.length < 2) return
+  for (const idx of matches) slots[idx]?.classList.add('preview')
+  const insertAt = insertIndexForType(state.selected, nextType)
+  if (insertAt >= 0 && insertAt < slots.length) {
+    slots[insertAt]?.classList.add('preview')
+  }
+}
+
+function setHoverTarget(hit) {
+  if (hit) {
+    state.hoveredDollId = hit.doll.id
+    state.hoveredObject = hit.object
+    setTrayPreview(hit.doll.type)
+  } else {
+    state.hoveredDollId = null
+    state.hoveredObject = null
+    setTrayPreview(null)
+  }
+  updateClickableOutline()
 }
 
 function triggerMergeFx() {
@@ -1317,7 +1367,7 @@ function computeMaxVisible(width, height, cfg) {
   const itemArea = avgSize * avgSize * 1.35
   const raw = Math.floor(area / itemArea)
   const total = cfg.itemsPerType * DOLL_TYPES.length
-  const desired = Math.floor(raw * 0.6)
+  const desired = Math.floor(raw * 0.75)
   return clamp(desired, Math.min(12, total), Math.min(36, total))
 }
 
@@ -1327,9 +1377,11 @@ function updateSpawnRadius() {
   state.containerRadius = radius
   const remaining = getRemainingCount()
   const ratio = state.totalItems ? remaining / state.totalItems : 1
-  const minFactor = 0.3
+  const minFactor = 0.24
   const curve = Math.pow(clamp(ratio, 0, 1), 0.78)
-  state.spawnRadius = radius * (minFactor + (1 - minFactor) * curve)
+  const waveStep = Math.floor((state.mergeCount || 0) / 6)
+  const waveShrink = Math.min(0.12, waveStep * 0.02)
+  state.spawnRadius = radius * (minFactor + (1 - minFactor) * curve) * (1 - waveShrink)
 }
 
 function placeDollInRadius(doll, width, height, radius, existing, rng) {
@@ -1429,7 +1481,7 @@ function replenishBoard() {
 
 function renderDolls() {
   setRemainUI(getRemainingCount())
-  setOutlineTarget(null)
+  setHoverTarget(null)
   syncMeshes()
   syncBodies()
   updateBlockedStates(true)
@@ -1457,7 +1509,7 @@ function getDollRect(doll) {
   }
 }
 
-function isDollBlocked(doll) {
+function isDollBlockedByOverlap(doll) {
   if (!doll || doll.animating) return false
   if (!Number.isFinite(doll.x) || !Number.isFinite(doll.y)) return false
   const baseLayer = Number.isFinite(doll.layer) ? doll.layer : 1
@@ -1481,6 +1533,31 @@ function isDollBlocked(doll) {
   return false
 }
 
+function isDollTopmost(doll) {
+  if (!three.ready || !three.camera || !doll?.mesh) return true
+  const origin = three.camera.position.clone()
+  const target = doll.mesh.position.clone()
+  const direction = target.sub(origin).normalize()
+  three.raycaster.set(origin, direction)
+  const hits = three.raycaster.intersectObjects(three.itemsGroup.children, true)
+  if (!hits.length) return true
+  for (const hit of hits) {
+    let obj = hit.object
+    while (obj && !obj.userData.dollId) obj = obj.parent
+    if (!obj) continue
+    return obj.userData.dollId === doll.id
+  }
+  return true
+}
+
+function isDollBlocked(doll) {
+  if (!doll || doll.animating) return false
+  if (three.ready && doll.mesh) {
+    return !isDollTopmost(doll)
+  }
+  return isDollBlockedByOverlap(doll)
+}
+
 function updateBlockedStates(force = false) {
   if (!state.dolls.length) return
   const now = performance.now()
@@ -1492,6 +1569,7 @@ function updateBlockedStates(force = false) {
     doll.blocked = blocked
     if (doll.mesh) setMeshDimmed(doll.mesh, blocked)
   }
+  updateClickableOutline()
 }
 
 function applyBowlCompression() {
@@ -1543,6 +1621,17 @@ function setToolUI() {
   ui.toolShuffle.disabled = shuffle <= 0
 }
 
+function getToolLoadout(modeKey) {
+  switch (modeKey) {
+    case 'hard':
+      return { remove: 1, match: 1, shuffle: 1 }
+    case 'normal':
+      return { remove: 2, match: 1, shuffle: 1 }
+    default:
+      return { remove: 2, match: 2, shuffle: 1 }
+  }
+}
+
 function endGame(title, sub) {
   const total = state.totalItems || getRemainingCount() || 1
   const done = total ? total - getRemainingCount() : 0
@@ -1552,7 +1641,7 @@ function endGame(title, sub) {
   state.running = false
   state.busy = false
   stopTimer()
-  setOutlineTarget(null)
+  setHoverTarget(null)
   setPause(false)
   setOverlay(true, title, detail)
 }
@@ -1597,6 +1686,7 @@ async function animateMeshPickup(doll) {
   const start = performance.now()
   const duration = 320
   const fromScale = mesh.scale.x || 1
+  const baseRotation = mesh.rotation.z || 0
   return new Promise((resolve) => {
     const frame = (now) => {
       const t = clamp((now - start) / duration, 0, 1)
@@ -1604,8 +1694,9 @@ async function animateMeshPickup(doll) {
       mesh.scale.setScalar(Math.max(0.02, s))
       const ease = 1 - Math.pow(1 - t, 3)
       const pos = startPos.clone().lerp(endPos, ease)
-      pos.y += Math.sin(t * Math.PI) * 40
+      pos.y += Math.sin(t * Math.PI) * 60
       mesh.position.copy(pos)
+      mesh.rotation.z = baseRotation + Math.sin(t * Math.PI) * 0.25
       if (t < 1) {
         requestAnimationFrame(frame)
       } else {
@@ -1679,7 +1770,7 @@ function useToolShuffle() {
     toast('打乱道具不足')
     return
   }
-  setOutlineTarget(null)
+  setHoverTarget(null)
   const { width, height } = measureBoard()
   updateSpawnRadius()
   const radius = Math.min(state.spawnRadius || state.containerRadius, state.containerRadius || 0)
@@ -1772,7 +1863,7 @@ async function pickDoll(dollId) {
 
   state.busy = true
   state.sound.click()
-  setOutlineTarget(null)
+  setHoverTarget(null)
 
   await animateMeshPickup(doll)
 
@@ -1802,10 +1893,12 @@ async function pickDoll(dollId) {
     if (now - state.lastMergeAt <= 1800) state.mergeCombo += 1
     else state.mergeCombo = 1
     state.lastMergeAt = now
+    state.mergeCount += 1
 
     const base = 10
     const mult = 1 + Math.min(0.6, (state.mergeCombo - 1) * 0.15)
-    const add = Math.round(base * mult)
+    const urgency = state.timer <= URGENCY_TIMER_THRESHOLD ? 1.35 : 1
+    const add = Math.round(base * mult * urgency)
     state.score += add
     setScoreUI(state.score)
     showFloatScore(`+${add}${state.mergeCombo >= 2 ? ` 连消×${state.mergeCombo}` : ''}`)
@@ -1825,12 +1918,18 @@ async function pickDoll(dollId) {
   if (getRemainingCount() === 0) {
     state.sound.win()
     startConfetti()
+    const timeBonus = Math.round(state.timer * BONUS_SCORE_PER_SECOND)
+    if (timeBonus > 0) {
+      state.score += timeBonus
+      setScoreUI(state.score)
+    }
     if (state.score > state.bestScore) {
       state.bestScore = state.score
       localStorage.setItem(STORAGE.bestScore, String(state.bestScore))
       setBestUI(state.bestScore)
     }
-    endGame('通关成功！', `得分：${state.score} · 剩余时间：${state.timer}s`)
+    const bonusText = timeBonus > 0 ? `（含时间奖励 ${timeBonus}）` : ''
+    endGame('通关成功！', `得分：${state.score}${bonusText} · 剩余时间：${state.timer}s`)
     return
   }
 
@@ -1861,13 +1960,16 @@ function resetGame(seed, modeKey) {
   state.pausedByHelp = false
   state.lastMergeAt = 0
   state.mergeCombo = 0
+  state.mergeCount = 0
   state.lastBlockUpdate = 0
   state.totalItems = state.config.itemsPerType * DOLL_TYPES.length
   state.pool = []
   state.maxVisible = 0
   state.containerRadius = 0
   state.spawnRadius = 0
-  state.tools = { remove: 2, match: 2, shuffle: 1 }
+  state.hoveredDollId = null
+  state.hoveredObject = null
+  state.tools = getToolLoadout(state.modeKey)
 
   setScoreUI(state.score)
   setTimerUI(state.timer)
@@ -2002,7 +2104,7 @@ function bindEvents() {
 
   ui.board.addEventListener('pointermove', (e) => {
     if (!state.running || state.busy) {
-      setOutlineTarget(null)
+      setHoverTarget(null)
       ui.board.style.cursor = 'default'
       return
     }
@@ -2018,13 +2120,8 @@ function bindEvents() {
       }
     }
     const hit = raycastPointer(e)
-    if (hit) {
-      setOutlineTarget(hit.object)
-      ui.board.style.cursor = 'pointer'
-    } else {
-      setOutlineTarget(null)
-      ui.board.style.cursor = 'default'
-    }
+    setHoverTarget(hit)
+    ui.board.style.cursor = hit ? 'pointer' : 'default'
   })
   ui.board.addEventListener('pointerdown', (e) => {
     if (!state.running || state.busy) return
@@ -2033,12 +2130,12 @@ function bindEvents() {
     const world = screenToWorldOnPlane(e.clientX, e.clientY, 0)
     input.lastBoard = world ? worldToBoard(world) : null
     const hit = raycastPointer(e)
-    setOutlineTarget(hit ? hit.object : null)
+    setHoverTarget(hit)
   })
   ui.board.addEventListener('pointerleave', () => {
     input.dragging = false
     input.lastBoard = null
-    setOutlineTarget(null)
+    setHoverTarget(null)
     ui.board.style.cursor = 'default'
   })
   ui.board.addEventListener('click', (e) => {
