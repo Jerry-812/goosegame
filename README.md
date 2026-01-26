@@ -52,6 +52,14 @@
 - 待合成栏会自动把同类型放到一起（更接近“抓大鹅”手感）
 - “分享”会带上本局 `seed`（局号）和 `mode`（难度），朋友打开就是同一局
 
+## 3D Ultimate 版本（R3F）
+
+仓库中还提供了一个 3D 重制版，适合后续升级到原生 App：
+
+- 位置：`r3f-app/`
+- 运行：`cd r3f-app && npm install && npm run dev`
+- 详情见 `README_NATIVE.md`
+
 ## 安装到桌面（可选）
 
 - iOS Safari：分享 → “添加到主屏幕”

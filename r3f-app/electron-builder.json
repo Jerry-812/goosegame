@@ -1,0 +1,14 @@
+{
+  "appId": "com.jerry812.goosegameultimate",
+  "productName": "GooseGameUltimate",
+  "directories": { "output": "release" },
+  "files": [
+    "dist/**/*",
+    "electron/main.cjs",
+    "package.json"
+  ],
+  "mac": {
+    "category": "public.app-category.games",
+    "target": ["dmg", "zip"]
+  }
+}
