@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goosegame-v20'
+const CACHE_NAME = 'goosegame-v22'
 
 const CORE_ASSETS = [
   './',
@@ -33,8 +33,46 @@ const CORE_ASSETS = [
   './images/item_camp_canteen.svg',
   './images/item_camp_flashlight.svg',
   './images/item_camp_compass.svg',
-  './images/item_camp_can.svg'
+  './images/item_camp_can.svg',
+  './images/item_toy_duck.svg',
+  './images/item_snack_donut.svg',
+  './images/item_tech_camera.svg',
+  './images/item_plant_pot.svg'
 ]
+
+const NETWORK_FIRST_DESTS = new Set(['document', 'script', 'style', 'manifest'])
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request, { ignoreSearch: true })
+  if (cached) return cached
+  const res = await fetch(request)
+  const url = new URL(request.url)
+  if (url.origin === self.location.origin && res.ok) {
+    const cache = await caches.open(CACHE_NAME)
+    cache.put(request, res.clone())
+  }
+  return res
+}
+
+async function networkFirst(request) {
+  try {
+    const res = await fetch(request)
+    const url = new URL(request.url)
+    if (url.origin === self.location.origin && res.ok) {
+      const cache = await caches.open(CACHE_NAME)
+      cache.put(request, res.clone())
+    }
+    return res
+  } catch (err) {
+    const cached = await caches.match(request, { ignoreSearch: true })
+    if (cached) return cached
+    if (request.mode === 'navigate') {
+      const fallback = await caches.match('./index.html')
+      if (fallback) return fallback
+    }
+    throw err
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -60,26 +98,21 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return
 
+  const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
+
   event.respondWith(
     (async () => {
-      const cached = await caches.match(request, { ignoreSearch: true })
-      if (cached) return cached
-
-      try {
-        const res = await fetch(request)
-        const url = new URL(request.url)
-        if (url.origin === self.location.origin && res.ok) {
-          const cache = await caches.open(CACHE_NAME)
-          cache.put(request, res.clone())
-        }
-        return res
-      } catch (err) {
-        if (request.mode === 'navigate') {
-          const fallback = await caches.match('./index.html')
-          if (fallback) return fallback
-        }
-        throw err
+      if (request.mode === 'navigate' || NETWORK_FIRST_DESTS.has(request.destination)) {
+        return networkFirst(request)
       }
+      return cacheFirst(request)
     })()
   )
+})
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })

@@ -1,0 +1,16 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pot-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd2a8"/>
+      <stop offset="1" stop-color="#f07b3a"/>
+    </linearGradient>
+    <linearGradient id="leaf-green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b6f0c8"/>
+      <stop offset="1" stop-color="#48a96b"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="200" rx="70" ry="12" fill="#cda8b3" opacity="0.35"/>
+  <path d="M80 110 C92 70 122 64 132 106 C144 64 176 72 184 116 C170 120 152 136 136 152 C126 162 110 162 100 150 C86 136 72 126 56 118 Z" fill="url(#leaf-green)"/>
+  <path d="M78 154 L162 154 L150 196 C148 202 142 206 136 206 H104 C98 206 92 202 90 196 Z" fill="url(#pot-body)"/>
+  <rect x="70" y="142" width="100" height="20" rx="8" fill="#f3a36a"/>
+</svg>

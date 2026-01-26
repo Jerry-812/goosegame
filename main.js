@@ -16,11 +16,15 @@ const ITEM_SCALE = 0.66
 const BLOCKED_OVERLAP_RATIO = 0.12
 const BLOCKED_DIM_OPACITY = 0.45
 const BLOCKED_CHECK_INTERVAL = 220
+const COMBO_WINDOW = 1800
+const HINT_DURATION = 2400
+const FREEZE_DURATION = 6000
+const BONUS_STEP = 120
 
 const MODES = {
-  easy: { key: 'easy', label: '轻松', seconds: 300, itemsPerType: 15, maxTray: 7, layerMax: 6 },
-  normal: { key: 'normal', label: '标准', seconds: 375, itemsPerType: 25, maxTray: 7, layerMax: 7 },
-  hard: { key: 'hard', label: '高手', seconds: 375, itemsPerType: 30, maxTray: 6, layerMax: 8 },
+  easy: { key: 'easy', label: '轻松', seconds: 300, itemsPerType: 12, maxTray: 7, layerMax: 6 },
+  normal: { key: 'normal', label: '标准', seconds: 375, itemsPerType: 19, maxTray: 7, layerMax: 7 },
+  hard: { key: 'hard', label: '高手', seconds: 375, itemsPerType: 23, maxTray: 6, layerMax: 8 },
 }
 
 const DOLL_TYPES = [
@@ -36,7 +40,24 @@ const DOLL_TYPES = [
   { type: 'camp_flashlight', label: '手电', scale: 1.7, aspect: 0.45 },
   { type: 'camp_compass', label: '指南针', scale: 1.05 },
   { type: 'camp_can', label: '罐头', scale: 1.15, aspect: 1.0 },
+  { type: 'toy_duck', label: '小黄鸭', scale: 1.1, score: 12 },
+  { type: 'snack_donut', label: '甜甜圈', scale: 1.05, score: 12 },
+  { type: 'tech_camera', label: '相机', scale: 1.3, aspect: 0.9, score: 13 },
+  { type: 'plant_pot', label: '盆栽', scale: 1.35, aspect: 1.05, score: 11 },
 ]
+
+const DOLL_MAP = Object.fromEntries(DOLL_TYPES.map((t) => [t.type, t]))
+
+const TOOL_LABELS = {
+  remove: '移出',
+  match: '凑齐',
+  hint: '提示',
+  undo: '撤回',
+  freeze: '停时',
+  shuffle: '打乱',
+}
+
+const BONUS_TOOL_POOL = ['remove', 'remove', 'match', 'hint', 'undo', 'freeze', 'shuffle']
 
 const COLLISION_SPECS = {
   kitchen_kettle: { kind: 'sphere', r: 0.36 },
@@ -51,6 +72,10 @@ const COLLISION_SPECS = {
   camp_flashlight: { kind: 'box', w: 0.96, h: 0.22 },
   camp_compass: { kind: 'sphere', r: 0.34 },
   camp_can: { kind: 'sphere', r: 0.35 },
+  toy_duck: { kind: 'box', w: 0.86, h: 0.68 },
+  snack_donut: { kind: 'sphere', r: 0.42 },
+  tech_camera: { kind: 'box', w: 0.9, h: 0.62 },
+  plant_pot: { kind: 'box', w: 0.8, h: 0.86 },
 }
 
 function getCollisionSpec(type, w, h) {
@@ -89,6 +114,22 @@ function sleep(ms) {
 function readInt(value, fallback) {
   const n = Number.parseInt(String(value || ''), 10)
   return Number.isFinite(n) ? n : fallback
+}
+
+function formatTime(totalSeconds) {
+  const seconds = Math.max(0, Math.floor(totalSeconds))
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${String(secs).padStart(2, '0')}`
+}
+
+function getDollMeta(type) {
+  return DOLL_MAP[type] || DOLL_TYPES[0]
+}
+
+function getScoreForType(type) {
+  const meta = getDollMeta(type)
+  return Number.isFinite(meta.score) ? meta.score : 10
 }
 
 function makeSeed() {
@@ -216,9 +257,15 @@ const ui = {
   score: qs('#score'),
   best: qs('#best'),
   remain: qs('#remain'),
+  scoreMain: qs('#scoreMain'),
+  bestMain: qs('#bestMain'),
+  remainMain: qs('#remainMain'),
   timer: qs('#timer'),
   timerPill: qs('#timerPill'),
+  timerTrack: qs('#timerTrack'),
+  timerFill: qs('#timerFill'),
   board: qs('#board'),
+  tray: qs('.tray'),
   traySlots: qs('#traySlots'),
   mergeFx: qs('#mergeFx'),
   confetti: qs('#confetti'),
@@ -239,9 +286,15 @@ const ui = {
 
   toolRemove: qs('#toolRemove'),
   toolMatch: qs('#toolMatch'),
+  toolHint: qs('#toolHint'),
+  toolUndo: qs('#toolUndo'),
+  toolFreeze: qs('#toolFreeze'),
   toolShuffle: qs('#toolShuffle'),
   toolRemoveCount: qs('#toolRemoveCount'),
   toolMatchCount: qs('#toolMatchCount'),
+  toolHintCount: qs('#toolHintCount'),
+  toolUndoCount: qs('#toolUndoCount'),
+  toolFreezeCount: qs('#toolFreezeCount'),
   toolShuffleCount: qs('#toolShuffleCount'),
 
   help: qs('#help'),
@@ -254,11 +307,16 @@ const ui = {
   loading: qs('#loading'),
   loadingText: qs('#loadingText'),
   loadingFill: qs('#loadingFill'),
+
+  comboChip: qs('#comboChip'),
+  comboValue: qs('#comboValue'),
+  comboBar: qs('#comboBar'),
 }
 
 const state = {
   rng: Math.random,
   seed: 0,
+  nextId: 1,
   modeKey: 'easy',
   config: MODES.easy,
 
@@ -283,9 +341,18 @@ const state = {
   lastMergeAt: 0,
   mergeCombo: 0,
   lastBlockUpdate: 0,
+  comboTimer: null,
+  hint: null,
+  hoverTarget: null,
+  freezeUntil: 0,
+  bonusAt: BONUS_STEP,
+  reloadAfterGame: false,
   tools: {
     remove: 2,
     match: 2,
+    hint: 3,
+    undo: 2,
+    freeze: 2,
     shuffle: 1,
   },
 }
@@ -354,6 +421,8 @@ function pauseGame(message = '') {
   state.running = false
   stopTimer()
   setPause(true)
+  clearHint()
+  setFreezeUI(false)
   if (message) toast(message)
 }
 
@@ -622,8 +691,34 @@ function buildBowl() {
   shadow.rotation.x = -Math.PI / 2
   shadow.position.set(0, 1, centerY - height / 2)
 
-  three.bowlGroup.add(wall, rim, base, innerWall, shadow)
-  three.bowlParts.push(wall, rim, base, innerWall, shadow)
+  const gooseMat = makeMaterial(0xf7f7f7, 0.25, 0.1)
+  const beakMat = makeMaterial(0xf2b740, 0.35, 0.08)
+  const goose = new THREE.Group()
+  const body = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.08, 20, 14), gooseMat)
+  body.scale.set(1.2, 0.85, 1.1)
+  const neck = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * 0.02, radius * 0.03, radius * 0.12, 12),
+    gooseMat
+  )
+  neck.position.set(radius * 0.08, radius * 0.08, 0)
+  neck.rotation.z = -0.4
+  const head = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.04, 16, 12), gooseMat)
+  head.position.set(radius * 0.14, radius * 0.16, 0)
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.02, radius * 0.06, 12), beakMat)
+  beak.rotation.z = -Math.PI / 2
+  beak.position.set(radius * 0.19, radius * 0.16, 0)
+  goose.add(body, neck, head, beak)
+  goose.position.set(-radius * 0.35, wallHeight * 0.5, centerY - height / 2 - radius * 0.18)
+  goose.rotation.y = Math.PI * 0.08
+  goose.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+
+  three.bowlGroup.add(wall, rim, base, innerWall, shadow, goose)
+  three.bowlParts.push(wall, rim, base, innerWall, shadow, goose)
 }
 
 function resizeThree() {
@@ -723,6 +818,7 @@ const MATERIALS = {
   blue: makeMaterial(0x6aa9ff, 0.25, 0.3),
   teal: makeMaterial(0x5fd6b8, 0.35, 0.15),
   yellow: makeMaterial(0xf2c15e, 0.4, 0.12),
+  green: makeMaterial(0x6bc67f, 0.35, 0.15),
   gray: makeMaterial(0xcfd2d8, 0.5, 0.1),
   dark: makeMaterial(0x3d3f47, 0.6, 0.2),
 }
@@ -745,6 +841,7 @@ function createItemMesh(doll) {
   const blue = MATERIALS.blue
   const teal = MATERIALS.teal
   const yellow = MATERIALS.yellow
+  const green = MATERIALS.green
   const gray = MATERIALS.gray
   const dark = MATERIALS.dark
 
@@ -853,6 +950,62 @@ function createItemMesh(doll) {
       const body = addBase(new THREE.CylinderGeometry(base * 0.32, base * 0.32, thickness * 0.8, 24), blue, thickness * 0.4)
       const label = addBase(new THREE.CylinderGeometry(base * 0.34, base * 0.34, thickness * 0.25, 24), yellow, thickness * 0.4)
       group.add(body, label)
+      break
+    }
+    case 'toy_duck': {
+      if (!yellow.map) yellow.map = makeGradientTexture(['#ffe7a6', '#f2c15e'])
+      if (!peach.map) peach.map = makeGradientTexture(['#ffd2a8', '#f07b3a'])
+      const body = addBase(new THREE.SphereGeometry(base * 0.34, 24, 16), yellow, base * 0.18)
+      body.scale.y = 0.7
+      const head = addBase(new THREE.SphereGeometry(base * 0.18, 20, 14), yellow, base * 0.34)
+      head.position.x = base * 0.32
+      const beak = addBase(new THREE.ConeGeometry(base * 0.08, base * 0.18, 14), peach, base * 0.34)
+      beak.rotation.z = -Math.PI / 2
+      beak.position.x = base * 0.5
+      const wing = addBase(new THREE.SphereGeometry(base * 0.18, 18, 12), peach, base * 0.22)
+      wing.scale.z = 0.5
+      wing.position.set(-base * 0.06, base * 0.05, base * 0.08)
+      group.add(body, head, beak, wing)
+      break
+    }
+    case 'snack_donut': {
+      if (!rose.map) rose.map = makeGradientTexture(['#ff93a8', '#e35b74'])
+      if (!peach.map) peach.map = makeGradientTexture(['#ffd2a8', '#f07b3a'])
+      const ring = addBase(new THREE.TorusGeometry(base * 0.36, base * 0.14, 18, 32), peach, thickness * 0.2)
+      ring.rotation.x = Math.PI / 2
+      const icing = addBase(new THREE.TorusGeometry(base * 0.34, base * 0.12, 18, 28), rose, thickness * 0.22)
+      icing.rotation.x = Math.PI / 2
+      icing.position.y += thickness * 0.06
+      group.add(ring, icing)
+      break
+    }
+    case 'tech_camera': {
+      if (!blue.map) blue.map = makeGradientTexture(['#8ec3ff', '#6aa9ff', '#4d7cc2'])
+      if (!gray.map) gray.map = makeGradientTexture(['#f2f2f2', '#c9c9c9'])
+      const body = addBase(new THREE.BoxGeometry(w * 0.7, thickness * 0.3, h * 0.5), dark, thickness * 0.15)
+      const lens = addBase(new THREE.CylinderGeometry(base * 0.18, base * 0.18, thickness * 0.28, 20), gray, thickness * 0.16)
+      lens.position.x = w * 0.16
+      const lensGlass = addBase(new THREE.CylinderGeometry(base * 0.12, base * 0.12, thickness * 0.12, 18), blue, thickness * 0.18)
+      lensGlass.position.x = w * 0.16
+      const flash = addBase(new THREE.BoxGeometry(w * 0.18, thickness * 0.12, h * 0.18), gray, thickness * 0.26)
+      flash.position.set(-w * 0.18, thickness * 0.12, -h * 0.12)
+      group.add(body, lens, lensGlass, flash)
+      break
+    }
+    case 'plant_pot': {
+      if (!peach.map) peach.map = makeGradientTexture(['#ffd2a8', '#f07b3a'])
+      if (!green.map) green.map = makeGradientTexture(['#a4e4b6', '#4aa96c'])
+      const pot = addBase(new THREE.CylinderGeometry(base * 0.32, base * 0.38, thickness * 0.5, 20), peach, thickness * 0.2)
+      const rim = addBase(new THREE.CylinderGeometry(base * 0.36, base * 0.36, thickness * 0.12, 20), peach, thickness * 0.45)
+      const leaf1 = addBase(new THREE.ConeGeometry(base * 0.16, thickness * 0.5, 12), green, thickness * 0.55)
+      leaf1.position.set(-base * 0.12, thickness * 0.2, 0)
+      leaf1.rotation.z = 0.3
+      const leaf2 = addBase(new THREE.ConeGeometry(base * 0.18, thickness * 0.58, 12), green, thickness * 0.58)
+      leaf2.position.set(base * 0.12, thickness * 0.22, 0)
+      leaf2.rotation.z = -0.25
+      const leaf3 = addBase(new THREE.ConeGeometry(base * 0.14, thickness * 0.46, 12), green, thickness * 0.6)
+      leaf3.position.set(0, thickness * 0.22, base * 0.08)
+      group.add(pot, rim, leaf1, leaf2, leaf3)
       break
     }
     default: {
@@ -1004,7 +1157,16 @@ function updateMeshes() {
     const tilt = Number.isFinite(doll.tilt) ? doll.tilt : 0
     const yaw = Number.isFinite(doll.visualYaw) ? doll.visualYaw : 0
     doll.mesh.rotation.set(tilt, yaw, 0)
+    const hintActive = state.hint && state.hint.id === doll.id && now < state.hint.until
+    if (hintActive) {
+      const phase = (now - state.hint.startedAt) / 140
+      const scale = 1 + Math.sin(phase) * 0.06
+      doll.mesh.scale.setScalar(scale)
+    } else if (doll.mesh.scale.x !== 1) {
+      doll.mesh.scale.setScalar(1)
+    }
   }
+  if (state.hint && now >= state.hint.until) clearHint()
   updateBlockedStates()
 }
 
@@ -1072,13 +1234,31 @@ function pushItemsAt(boardX, boardY, dx, dy) {
   if (pushed) input.lastPushAt = performance.now()
 }
 
-function setOutlineTarget(obj) {
+function getHintMesh() {
+  if (!state.hint) return null
+  return three.meshes.get(state.hint.id) || null
+}
+
+function updateOutlineTargets() {
   if (!three.outlinePass) return
-  if (!obj) {
-    three.outlinePass.selectedObjects = []
-    return
+  const targets = []
+  const hintMesh = getHintMesh()
+  if (hintMesh) targets.push(hintMesh)
+  if (state.hoverTarget && state.hoverTarget !== hintMesh) {
+    targets.push(state.hoverTarget)
   }
-  three.outlinePass.selectedObjects = [obj]
+  three.outlinePass.selectedObjects = targets
+}
+
+function setOutlineTarget(obj) {
+  state.hoverTarget = obj
+  updateOutlineTargets()
+}
+
+function clearHint() {
+  if (!state.hint) return
+  state.hint = null
+  updateOutlineTargets()
 }
 
 function showLoading(visible, text = '') {
@@ -1087,20 +1267,33 @@ function showLoading(visible, text = '') {
 }
 
 function setTimerUI(value) {
-  ui.timer.textContent = String(value)
-  ui.timerPill.classList.toggle('danger', value <= 10)
+  ui.timer.textContent = formatTime(value)
+  const danger = value <= 10
+  ui.timerPill.classList.toggle('danger', danger)
+  ui.timerTrack.classList.toggle('danger', danger)
+  const total = Math.max(1, state.config?.seconds || 1)
+  const ratio = clamp(value / total, 0, 1)
+  ui.timerFill.style.width = `${Math.round(ratio * 100)}%`
+}
+
+function setFreezeUI(active) {
+  ui.timerPill.classList.toggle('freeze', active)
+  ui.timerTrack.classList.toggle('freeze', active)
 }
 
 function setScoreUI(value) {
   ui.score.textContent = String(value)
+  ui.scoreMain.textContent = String(value)
 }
 
 function setBestUI(value) {
   ui.best.textContent = String(value)
+  ui.bestMain.textContent = String(value)
 }
 
 function setRemainUI(value) {
   ui.remain.textContent = String(value)
+  ui.remainMain.textContent = String(value)
 }
 
 function getSelectedModeKey() {
@@ -1117,7 +1310,7 @@ function setMode(modeKey) {
   if (radio) radio.checked = true
 
   const total = state.config.itemsPerType * DOLL_TYPES.length
-  ui.modeDesc.textContent = `${total} 个物品 · ${state.config.seconds} 秒 · ${state.config.maxTray} 格待合成栏 · 局号 ${state.seed}`
+  ui.modeDesc.textContent = `${total} 个物品 · 倒计时 ${formatTime(state.config.seconds)} · ${state.config.maxTray} 格待合成栏 · 局号 ${state.seed}`
 }
 
 function initTray(maxTray) {
@@ -1145,6 +1338,9 @@ function renderTray({ popIndex = -1 } = {}) {
       slot.appendChild(img)
     }
   })
+
+  const dangerThreshold = Math.max(1, state.config.maxTray - 1)
+  ui.tray.classList.toggle('danger', state.selected.length >= dangerThreshold)
 
   if (popIndex >= 0 && slots[popIndex]) {
     slots[popIndex].classList.add('pop')
@@ -1302,6 +1498,63 @@ function generateDolls(boardW, boardH, cfg, rng) {
   }
 
   return dolls
+}
+
+function createDollFromType(type, rng) {
+  const meta = getDollMeta(type)
+  const { width } = measureBoard()
+  const { sizes } = computeSizes(width)
+  const size = sizes[type] || sizes[meta.type] || Math.max(28, Math.round(width * 0.06))
+  const aspect = meta.aspect ?? APPROX_ASPECT
+  const w = size
+  const h = size * aspect
+  const physRadius = Math.max(10, getCollisionSpec(type, w, h).radius)
+  const layer = Math.floor(rng() * state.config.layerMax) + 1
+  const dollId = state.nextId++
+  return {
+    id: dollId,
+    type,
+    label: meta.label,
+    image: `./images/item_${type}.svg`,
+    size,
+    aspect,
+    x: 0,
+    y: 0,
+    baseX: 0,
+    baseY: 0,
+    tx: 0,
+    ty: 0,
+    w,
+    h,
+    heightOffset: physRadius,
+    radius: physRadius,
+    physRadius,
+    vx: 0,
+    vy: 0,
+    spin: 0,
+    spinVel: 0,
+    noiseSeed: rng() * Math.PI * 2,
+    layer,
+    z: layer * 1000 + dollId,
+    rotate: Math.round((rng() * 2 - 1) * 16),
+    visualYaw: 0,
+    tilt: 0,
+    floatDelay: Math.round(rng() * 1800),
+    visible: false,
+  }
+}
+
+function spawnDollFromType(type) {
+  const { width, height } = measureBoard()
+  const radius = state.containerRadius || Math.min(width, height) * 0.44
+  const doll = createDollFromType(type, state.rng)
+  placeDollInRadius(doll, width, height, radius, state.dolls, state.rng)
+  state.dolls.push(doll)
+  applyBowlCompression()
+  syncMeshes()
+  syncBodies()
+  updateBlockedStates(true)
+  setRemainUI(getRemainingCount())
 }
 
 function getRemainingCount() {
@@ -1502,6 +1755,10 @@ function startTimer() {
   stopTimer()
   state.interval = window.setInterval(() => {
     if (!state.running) return
+    const now = Date.now()
+    const freezeActive = now < state.freezeUntil
+    setFreezeUI(freezeActive)
+    if (freezeActive) return
     state.timer -= 1
     if (state.timer <= 0) {
       state.timer = 0
@@ -1527,6 +1784,69 @@ function showFloatScore(text) {
   window.setTimeout(() => el.remove(), 950)
 }
 
+function triggerComboUI() {
+  if (state.mergeCombo < 2) {
+    ui.comboChip.hidden = true
+    return
+  }
+  ui.comboValue.textContent = `x${state.mergeCombo}`
+  ui.comboChip.hidden = false
+  ui.comboBar.style.animation = 'none'
+  void ui.comboBar.offsetWidth
+  ui.comboBar.style.animation = `combo-drain ${COMBO_WINDOW}ms linear forwards`
+  window.clearTimeout(state.comboTimer)
+  state.comboTimer = window.setTimeout(() => {
+    ui.comboChip.hidden = true
+  }, COMBO_WINDOW + 80)
+}
+
+function findHintCandidate() {
+  const available = state.dolls.filter((d) => !d.animating && !isDollBlocked(d))
+  if (!available.length) return null
+  const counts = Object.create(null)
+  for (const item of state.selected) counts[item.type] = (counts[item.type] || 0) + 1
+  const scored = available.map((d) => {
+    const count = counts[d.type] || 0
+    const layer = Number.isFinite(d.layer) ? d.layer : 0
+    return { doll: d, score: count * 100 + layer }
+  })
+  scored.sort((a, b) => b.score - a.score)
+  if (state.hint && scored[0] && scored[0].doll.id === state.hint.id && scored[1]) {
+    return scored[1].doll
+  }
+  return scored[0]?.doll || null
+}
+
+function activateHint(doll) {
+  if (!doll) return
+  const now = performance.now()
+  state.hint = {
+    id: doll.id,
+    startedAt: now,
+    until: now + HINT_DURATION,
+  }
+  updateOutlineTargets()
+  window.clearTimeout(activateHint._t)
+  activateHint._t = window.setTimeout(() => {
+    if (state.hint && state.hint.id === doll.id) clearHint()
+  }, HINT_DURATION + 60)
+}
+
+function awardBonusTool() {
+  const key = BONUS_TOOL_POOL[Math.floor(state.rng() * BONUS_TOOL_POOL.length)]
+  state.tools[key] += 1
+  setToolUI()
+  const label = TOOL_LABELS[key] || key
+  toast(`奖励道具 +1：${label}`)
+}
+
+function maybeAwardBonus() {
+  while (state.score >= state.bonusAt) {
+    awardBonusTool()
+    state.bonusAt += BONUS_STEP
+  }
+}
+
 function setSoundUI() {
   const on = state.sound.enabled
   ui.soundBtn.querySelector('.icon').textContent = on ? 'ON' : 'OFF'
@@ -1534,12 +1854,18 @@ function setSoundUI() {
 }
 
 function setToolUI() {
-  const { remove, match, shuffle } = state.tools
+  const { remove, match, hint, undo, freeze, shuffle } = state.tools
   ui.toolRemoveCount.textContent = String(remove)
   ui.toolMatchCount.textContent = String(match)
+  ui.toolHintCount.textContent = String(hint)
+  ui.toolUndoCount.textContent = String(undo)
+  ui.toolFreezeCount.textContent = String(freeze)
   ui.toolShuffleCount.textContent = String(shuffle)
   ui.toolRemove.disabled = remove <= 0
   ui.toolMatch.disabled = match <= 0
+  ui.toolHint.disabled = hint <= 0
+  ui.toolUndo.disabled = undo <= 0
+  ui.toolFreeze.disabled = freeze <= 0
   ui.toolShuffle.disabled = shuffle <= 0
 }
 
@@ -1553,6 +1879,9 @@ function endGame(title, sub) {
   state.busy = false
   stopTimer()
   setOutlineTarget(null)
+  clearHint()
+  ui.comboChip.hidden = true
+  setFreezeUI(false)
   setPause(false)
   setOverlay(true, title, detail)
 }
@@ -1640,6 +1969,7 @@ function useToolRemove() {
     toast('移出道具不足')
     return
   }
+  state.sound.click()
   state.selected.pop()
   renderTray()
   toast('已移出一个物品')
@@ -1656,7 +1986,7 @@ async function useToolMatch() {
   }
   const camera = three.camera
   const candidate = state.dolls
-    .filter((d) => d.type === targetType)
+    .filter((d) => d.type === targetType && !isDollBlocked(d))
     .sort((a, b) => {
       const da = a.mesh && camera ? camera.position.distanceTo(a.mesh.position) : -a.layer
       const db = b.mesh && camera ? camera.position.distanceTo(b.mesh.position) : -b.layer
@@ -1673,12 +2003,62 @@ async function useToolMatch() {
   await pickDoll(candidate.id)
 }
 
+function useToolHint() {
+  if (!state.running || state.busy) return
+  const candidate = findHintCandidate()
+  if (!candidate) {
+    toast('暂无可提示的物品')
+    return
+  }
+  if (!consumeTool('hint')) {
+    toast('提示道具不足')
+    return
+  }
+  state.sound.click()
+  activateHint(candidate)
+  toast(`提示：${candidate.label}`)
+}
+
+function useToolUndo() {
+  if (!state.running || state.busy) return
+  if (!state.selected.length) {
+    toast('栏里没有可撤回的物品')
+    return
+  }
+  if (!consumeTool('undo')) {
+    toast('撤回道具不足')
+    return
+  }
+  state.sound.click()
+  const item = state.selected.pop()
+  renderTray()
+  if (item) {
+    spawnDollFromType(item.type)
+    toast(`已撤回一个${item.label}`)
+  }
+}
+
+function useToolFreeze() {
+  if (!state.running || state.busy) return
+  if (!consumeTool('freeze')) {
+    toast('停时道具不足')
+    return
+  }
+  state.sound.click()
+  const now = Date.now()
+  state.freezeUntil = Math.max(state.freezeUntil, now) + FREEZE_DURATION
+  setFreezeUI(true)
+  toast(`时间冻结 ${Math.round(FREEZE_DURATION / 1000)} 秒`)
+}
+
 function useToolShuffle() {
   if (!state.running || state.busy) return
   if (!consumeTool('shuffle')) {
     toast('打乱道具不足')
     return
   }
+  state.sound.click()
+  clearHint()
   setOutlineTarget(null)
   const { width, height } = measureBoard()
   updateSpawnRadius()
@@ -1754,6 +2134,7 @@ function startConfetti() {
 
 async function pickDoll(dollId) {
   if (!state.running || state.busy) return
+  clearHint()
 
   const idx = state.dolls.findIndex((d) => d.id === dollId)
   if (idx < 0) return
@@ -1799,16 +2180,18 @@ async function pickDoll(dollId) {
     state.sound.merge()
 
     const now = Date.now()
-    if (now - state.lastMergeAt <= 1800) state.mergeCombo += 1
+    if (now - state.lastMergeAt <= COMBO_WINDOW) state.mergeCombo += 1
     else state.mergeCombo = 1
     state.lastMergeAt = now
 
-    const base = 10
+    const base = getScoreForType(merge.type)
     const mult = 1 + Math.min(0.6, (state.mergeCombo - 1) * 0.15)
     const add = Math.round(base * mult)
     state.score += add
     setScoreUI(state.score)
     showFloatScore(`+${add}${state.mergeCombo >= 2 ? ` 连消×${state.mergeCombo}` : ''}`)
+    triggerComboUI()
+    maybeAwardBonus()
 
     // remove from end to start
     const sorted = [...merge.indexes].sort((a, b) => b - a)
@@ -1830,7 +2213,7 @@ async function pickDoll(dollId) {
       localStorage.setItem(STORAGE.bestScore, String(state.bestScore))
       setBestUI(state.bestScore)
     }
-    endGame('通关成功！', `得分：${state.score} · 剩余时间：${state.timer}s`)
+    endGame('通关成功！', `得分：${state.score} · 剩余时间：${formatTime(state.timer)}`)
     return
   }
 
@@ -1844,6 +2227,11 @@ async function pickDoll(dollId) {
 }
 
 function resetGame(seed, modeKey) {
+  if (state.reloadAfterGame) {
+    state.reloadAfterGame = false
+    window.location.reload()
+    return
+  }
   state.seed = seed >>> 0
   state.rng = mulberry32(state.seed)
   setUrlConfig({ modeKey, seed: state.seed })
@@ -1867,7 +2255,14 @@ function resetGame(seed, modeKey) {
   state.maxVisible = 0
   state.containerRadius = 0
   state.spawnRadius = 0
-  state.tools = { remove: 2, match: 2, shuffle: 1 }
+  state.tools = { remove: 2, match: 2, hint: 3, undo: 2, freeze: 2, shuffle: 1 }
+  state.freezeUntil = 0
+  state.bonusAt = BONUS_STEP
+  state.hint = null
+  state.hoverTarget = null
+  window.clearTimeout(state.comboTimer)
+  ui.comboChip.hidden = true
+  setFreezeUI(false)
 
   setScoreUI(state.score)
   setTimerUI(state.timer)
@@ -1878,6 +2273,7 @@ function resetGame(seed, modeKey) {
   const allDolls = generateDolls(width, height, state.config, state.rng)
   state.pool = allDolls
   state.dolls = []
+  state.nextId = allDolls.length + 1
   state.maxVisible = computeMaxVisible(width, height, state.config)
   applyBowlCompression()
   replenishBoard()
@@ -1946,6 +2342,7 @@ function bindEvents() {
       state.pausedByHelp = true
       stopTimer()
     }
+    clearHint()
     setPause(false)
     setMode(state.modeKey)
     setHelp(true)
@@ -1955,6 +2352,9 @@ function bindEvents() {
   ui.toolMatch.addEventListener('click', () => {
     useToolMatch()
   })
+  ui.toolHint.addEventListener('click', useToolHint)
+  ui.toolUndo.addEventListener('click', useToolUndo)
+  ui.toolFreeze.addEventListener('click', useToolFreeze)
   ui.toolShuffle.addEventListener('click', useToolShuffle)
 
   ui.copySeedBtn.addEventListener('click', async () => {
@@ -1997,7 +2397,7 @@ function bindEvents() {
     const next = getSelectedModeKey()
     const cfg = MODES[next]
     const total = cfg.itemsPerType * DOLL_TYPES.length
-    ui.modeDesc.textContent = `${total} 个物品 · ${cfg.seconds} 秒 · ${cfg.maxTray} 格待合成栏 · 局号 ${state.seed}`
+    ui.modeDesc.textContent = `${total} 个物品 · 倒计时 ${formatTime(cfg.seconds)} · ${cfg.maxTray} 格待合成栏 · 局号 ${state.seed}`
   })
 
   ui.board.addEventListener('pointermove', (e) => {
@@ -2062,6 +2462,59 @@ function bindEvents() {
   })
   window.addEventListener('blur', () => {
     if (!document.hidden) pauseGame('已自动暂停')
+  })
+
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return
+    const target = e.target
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+    const key = e.key.toLowerCase()
+    let handled = true
+    switch (key) {
+      case '1':
+        useToolRemove()
+        break
+      case '2':
+        useToolMatch()
+        break
+      case '3':
+        useToolHint()
+        break
+      case '4':
+        useToolUndo()
+        break
+      case '5':
+        useToolFreeze()
+        break
+      case '6':
+        useToolShuffle()
+        break
+      case 'p':
+      case ' ':
+        if (!ui.pause.hidden) {
+          ui.resumeBtn.click()
+        } else if (ui.help.hidden && ui.overlay.hidden) {
+          pauseGame()
+        }
+        break
+      case 'h':
+        if (!ui.help.hidden) ui.closeHelpBtn.click()
+        else ui.menuBtn.click()
+        break
+      case 'r':
+        ui.restartBtn.click()
+        break
+      case 's':
+        ui.soundBtn.click()
+        break
+      case 'escape':
+        if (!ui.help.hidden) ui.closeHelpBtn.click()
+        else if (!ui.pause.hidden) ui.resumeBtn.click()
+        break
+      default:
+        handled = false
+    }
+    if (handled) e.preventDefault()
   })
 
   window.addEventListener('resize', () => {
@@ -2134,7 +2587,29 @@ async function boot() {
 
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('./service-worker.js')
+      let reloaded = false
+      const reg = await navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+      const requestUpdate = (worker) => worker && worker.postMessage({ type: 'SKIP_WAITING' })
+      if (reg.waiting) requestUpdate(reg.waiting)
+      reg.addEventListener('updatefound', () => {
+        const worker = reg.installing
+        if (!worker) return
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            requestUpdate(worker)
+          }
+        })
+      })
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded) return
+        reloaded = true
+        if (state.running) {
+          state.reloadAfterGame = true
+          toast('新版本已就绪，本局结束后刷新')
+          return
+        }
+        window.location.reload()
+      })
     } catch {
       // ignore
     }

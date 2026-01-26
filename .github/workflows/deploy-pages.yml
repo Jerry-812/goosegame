@@ -23,9 +23,13 @@ jobs:
         run: |
           rm -rf _site
           mkdir -p _site
-          cp -f index.html styles.css main.js manifest.webmanifest service-worker.js .nojekyll _site/
-          cp -R images _site/images
-          cp -R icons _site/icons
+          rsync -a --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.DS_Store' \
+            --exclude 'node_modules' \
+            --exclude '_site' \
+            ./ _site/
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4

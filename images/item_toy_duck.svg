@@ -1,0 +1,19 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="duck-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe6a8"/>
+      <stop offset="1" stop-color="#f2b546"/>
+    </linearGradient>
+    <linearGradient id="duck-wing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffeec2"/>
+      <stop offset="1" stop-color="#f6c669"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="200" rx="70" ry="12" fill="#cda8b3" opacity="0.35"/>
+  <ellipse cx="118" cy="136" rx="74" ry="46" fill="url(#duck-body)"/>
+  <circle cx="172" cy="108" r="26" fill="url(#duck-body)"/>
+  <circle cx="178" cy="104" r="4" fill="#2d2d2d"/>
+  <circle cx="166" cy="100" r="8" fill="#fff3cf" opacity="0.7"/>
+  <path d="M186 114 L214 124 L186 132 Z" fill="#f09b44" stroke="#dd7d27" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="104" cy="146" rx="30" ry="22" fill="url(#duck-wing)"/>
+</svg>

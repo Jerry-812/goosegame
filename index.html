@@ -26,12 +26,35 @@
         </button>
         <div class="timer-pill" id="timerPill" aria-label="倒计时">
           <span class="timer-icon">TIME</span>
-          <span id="timer">60</span>
+          <span id="timer">0:00</span>
         </div>
         <button class="icon-btn" id="menuBtn" type="button" aria-label="菜单">
           <span class="icon">...</span>
         </button>
       </header>
+
+      <section class="status" aria-label="游戏状态">
+        <div class="stat-chip">
+          <span class="stat-label">得分</span>
+          <span class="stat-value" id="scoreMain">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">最佳</span>
+          <span class="stat-value" id="bestMain">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">剩余</span>
+          <span class="stat-value" id="remainMain">0</span>
+        </div>
+        <div class="combo-chip" id="comboChip" hidden>
+          <span class="combo-label">连消</span>
+          <span class="combo-value" id="comboValue">x2</span>
+          <span class="combo-bar"><span class="combo-bar-fill" id="comboBar"></span></span>
+        </div>
+      </section>
+      <div class="timer-track" id="timerTrack" aria-hidden="true">
+        <div class="timer-fill" id="timerFill"></div>
+      </div>
 
       <section class="board-wrap">
         <div class="decor">
@@ -58,6 +81,21 @@
             <span class="tool-icon">MAG</span>
             <span class="tool-label">凑齐</span>
             <span class="tool-count" id="toolMatchCount">2</span>
+          </button>
+          <button class="tool-btn tool-hint" id="toolHint" type="button">
+            <span class="tool-icon">TIP</span>
+            <span class="tool-label">提示</span>
+            <span class="tool-count" id="toolHintCount">3</span>
+          </button>
+          <button class="tool-btn tool-undo" id="toolUndo" type="button">
+            <span class="tool-icon">UNDO</span>
+            <span class="tool-label">撤回</span>
+            <span class="tool-count" id="toolUndoCount">2</span>
+          </button>
+          <button class="tool-btn tool-freeze" id="toolFreeze" type="button">
+            <span class="tool-icon">ICE</span>
+            <span class="tool-label">停时</span>
+            <span class="tool-count" id="toolFreezeCount">2</span>
           </button>
           <button class="tool-btn" id="toolShuffle" type="button">
             <span class="tool-icon">MIX</span>
@@ -98,13 +136,15 @@
                   <span>高手</span>
                 </label>
               </div>
-              <div class="mode-sub" id="modeDesc">30 个物品 · 60 秒 · 7 格待合成栏</div>
+              <div class="mode-sub" id="modeDesc">准备中...</div>
             </div>
             <ul class="help-list">
               <li>只能点击“最上层可见”的物品（被遮挡会变暗且不可点）。</li>
               <li>点击后进入底部待合成栏；同类型累计 3 个会自动消除并加分。</li>
               <li>限时清空所有物品获胜；待合成栏放满且无法继续放置则失败。</li>
-              <li>道具“移出”移走一个栏内物品，“凑齐”吸来同类，“打乱”洗牌。</li>
+              <li>道具“移出”移走一个栏内物品，“凑齐”吸来同类，“提示”高亮可点物品，“撤回”送回盘面，“停时”冻结倒计时，“打乱”洗牌。</li>
+              <li>积分达到阶段会奖励随机道具，连消越高得分越多。</li>
+              <li>快捷键：1-6 使用道具，空格/P 暂停，H 打开菜单。</li>
             </ul>
           </div>
           <div class="dialog-actions">
