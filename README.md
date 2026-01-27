@@ -1,74 +1,79 @@
-# goosegame（芭比消除）
+# Goose Catch Deluxe（抓大鹅风格）
 
-在线试玩（GitHub Pages）：
+本项目现在的**推荐运行方式是直接打开打包好的 macOS `.app`**。
 
-- `https://jerry-812.github.io/goosegame/`
+参考目标效果（视觉与手感对齐 goose-catch-main / 官方展示）：
 
-## 运行
+- `https://goose-catch.vercel.app/`
 
-最简单（本地）：
+## 1. 直接用 `.app` 运行（推荐）
 
-- `python3 -m http.server 8080`
-- 浏览器打开 `http://localhost:8080/`
+在仓库根目录执行：
 
-部署成可分享链接（推荐 GitHub Pages）：
+1. 安装依赖
+- `npm install`
 
-### GitHub Pages（免费）
+2. 打包 macOS App（会生成最新的 `.app`）
+- `npm run electron:dist`
 
-本仓库已内置自动部署：每次 push 到 `main` 会自动把静态站点发布到 `gh-pages` 分支。
+3. 打开 App
+- Finder 中打开：`dist/mac-arm64/Goose Catch Deluxe.app`
+- 或终端执行：`open \"dist/mac-arm64/Goose Catch Deluxe.app\"`
 
-1. 打开仓库：`Settings → Pages`
-2. `Build and deployment` 里选择：
-   - `Source`：`Deploy from a branch`
-   - `Branch`：`gh-pages` / `(root)`
-3. 等待 1～2 分钟（或去 `Actions` 看 `Deploy GitHub Pages (gh-pages branch)` 是否成功）
-4. 访问并分享网站链接：
-   - 你的仓库是 `Jerry-812/goosegame`，通常地址是：`https://jerry-812.github.io/goosegame/`
+说明：
 
-如果你看到部署失败（红叉）：
+- `.app` 的入口就是当前根目录的 `index.html + main.js + styles.css`。
+- 每次你改完样式或逻辑，只要重新执行一次 `npm run electron:dist`，再打开 `.app` 就是最新版本。
 
-- 先确认 `Actions` 没有被禁用（仓库 `Settings → Actions → General`）
-- 再确认 `Settings → Pages` 已选择 `gh-pages` 分支发布
-- 等待一次新的 push 触发工作流（或在 `Actions` 里手动 `Run workflow`）
+## 2. 浏览器本地运行（开发调试）
 
-### 方案 B：Netlify（免费/一键）
+如果你要快速调试画面和交互：
 
-- 将仓库导入 Netlify 即可（本仓库已提供 `netlify.toml`，无构建步骤）
-- 发布目录是项目根目录，入口 `index.html`
+1. 启动静态服务
+- `python3 -m http.server 4173`
 
-### 方案 C：Vercel（免费/一键）
+2. 浏览器打开
+- `http://127.0.0.1:4173/index.html?mode=easy&seed=2026`
 
-- 将仓库导入 Vercel 即可（本仓库已提供 `vercel.json`）
-- 入口 `index.html`
+可选（开启调试钩子）：
 
-## 玩法
+- `http://127.0.0.1:4173/index.html?debug=1&mode=easy&seed=2026`
 
-- 点击锅里**可点击（最上层/未被遮挡）**的芭比娃娃，放入底部“待合成栏”
-- 待合成栏中任意类型累计 **3 个**会自动消除并加分
-- 60 秒倒计时清空全部娃娃即胜利；若待合成栏无法再放入新娃娃则失败
+## 当前对齐参考站点的关键点
 
-小技巧：
+为对齐 `goose-catch-main / vercel` 的观感，当前实现采用了这些默认参数（easy 模式）：
 
-- 待合成栏会自动把同类型放到一起（更接近“抓大鹅”手感）
-- “分享”会带上本局 `seed`（局号）和 `mode`（难度），朋友打开就是同一局
+- 倒计时：`120s（2:00）`
+- 总物品：`105`
+- 托盘格数：`6`
+- 手机壳式 UI（灰底 + 圆角机身 + 刘海 + 底部蓝色托盘）
 
-## 3D Ultimate 版本（R3F）
+这些参数与画面风格已经直接写在：
 
-仓库中还提供了一个 3D 重制版，适合后续升级到原生 App：
+- 逻辑：`main.js`
+- 画面：`styles.css`
 
-- 位置：`r3f-app/`
-- 运行：`cd r3f-app && npm install && npm run dev`
-- 详情见 `README_NATIVE.md`
+## 打包与脚本
 
-## 安装到桌面（可选）
+项目脚本（根目录 `package.json`）：
 
-- iOS Safari：分享 → “添加到主屏幕”
-- Android Chrome：右上角菜单 → “安装应用”
+- 语法检查：`npm run check`
+- Electron 打包（目录产物）：`npm run electron:dist`
 
-## 素材
+打包产物位置：
 
-`images/` 下已生成可用的占位 PNG（可直接替换为更精美的透明底素材）。
+- `dist/mac-arm64/Goose Catch Deluxe.app`
+
+## 部署（可选）
+
+这是一个纯静态站点，也可以继续部署到 GitHub Pages / Netlify / Vercel：
+
+- 入口：`index.html`
+- 静态资源：根目录与 `assets/`、`images/`、`vendor/` 等
+
+> 注意：线上部署用于分享，**本地体验建议优先 `.app`**（更接近你最终想要的形态）。
 
 ## 备注
 
-仓库里保留了微信小程序原型文件（`pages/`、`components/`、`app.json` 等），网页版本不依赖它们。
+- 仓库中保留了微信小程序原型文件（`pages/`、`components/`、`app.json` 等），网页与 `.app` 不依赖它们。
+- 参考项目源码在：`goose-catch-main/`

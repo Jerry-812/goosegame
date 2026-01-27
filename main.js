@@ -5,6 +5,7 @@ import { RenderPass } from './vendor/three/examples/jsm/postprocessing/RenderPas
 import { OutlinePass } from './vendor/three/examples/jsm/postprocessing/OutlinePass.js'
 import { ShaderPass } from './vendor/three/examples/jsm/postprocessing/ShaderPass.js'
 import { FXAAShader } from './vendor/three/examples/jsm/shaders/FXAAShader.js'
+import { GLTFLoader } from './vendor/three/examples/jsm/loaders/GLTFLoader.js'
 
 const STORAGE = {
   bestScore: 'goosegame.bestScore',
@@ -21,11 +22,30 @@ const HINT_DURATION = 2400
 const FREEZE_DURATION = 6000
 const BONUS_STEP = 120
 
-const MODES = {
-  easy: { key: 'easy', label: '轻松', seconds: 300, itemsPerType: 12, maxTray: 7, layerMax: 6 },
-  normal: { key: 'normal', label: '标准', seconds: 375, itemsPerType: 19, maxTray: 7, layerMax: 7 },
-  hard: { key: 'hard', label: '高手', seconds: 375, itemsPerType: 23, maxTray: 6, layerMax: 8 },
+const PHYSICS_IDLE_STEP_MS = 420
+const PHYSICS_IDLE_STEPS = 2
+const PHYSICS_IDLE_ATTRACTOR = 0.36
+
+const TOOL_DEFAULTS = { remove: 2, match: 2, hint: 3, undo: 2, freeze: 2, shuffle: 1 }
+const MODE_TOOL_OVERRIDES = {
+  hard: { remove: 3, shuffle: 2 },
 }
+
+function getInitialTools(modeKey) {
+  const tools = { ...TOOL_DEFAULTS }
+  const override = MODE_TOOL_OVERRIDES[modeKey]
+  if (override) Object.assign(tools, override)
+  return tools
+}
+
+const MODES = {
+  // Match the reference feel by default: 2 minutes, 105 items, 6-slot tray.
+  easy: { key: 'easy', label: '轻松', seconds: 120, itemsPerType: 15, activeTypes: 7, maxTray: 6, layerMax: 6 },
+  normal: { key: 'normal', label: '标准', seconds: 210, itemsPerType: 18, activeTypes: 10, maxTray: 6, layerMax: 7 },
+  hard: { key: 'hard', label: '高手', seconds: 240, itemsPerType: 21, activeTypes: 12, maxTray: 6, layerMax: 8 },
+}
+
+const GOOSE_ASSET_BASE = './assets/goose-catch'
 
 const DOLL_TYPES = [
   { type: 'kitchen_kettle', label: '茶壶', scale: 1.3 },
@@ -44,9 +64,121 @@ const DOLL_TYPES = [
   { type: 'snack_donut', label: '甜甜圈', scale: 1.05, score: 12 },
   { type: 'tech_camera', label: '相机', scale: 1.3, aspect: 0.9, score: 13 },
   { type: 'plant_pot', label: '盆栽', scale: 1.35, aspect: 1.05, score: 11 },
+  {
+    type: 'food_icecream',
+    label: '冰淇淋',
+    scale: 1.25,
+    aspect: 1.0,
+    score: 12,
+    icon: './images/item_food_icecream.svg',
+    modelUrl: `${GOOSE_ASSET_BASE}/ice-cream.glb`,
+    modelScale: 1.12,
+  },
+  {
+    type: 'food_cheese',
+    label: '奶酪',
+    scale: 1.35,
+    aspect: 1.05,
+    score: 12,
+    icon: './images/item_food_cheese.svg',
+    modelUrl: `${GOOSE_ASSET_BASE}/cheese.glb`,
+    modelScale: 1.15,
+    modelYaw: Math.PI * 0.25,
+  },
+  {
+    type: 'food_cookie',
+    label: '饼干人',
+    scale: 1.32,
+    aspect: 0.95,
+    score: 13,
+    icon: './images/item_food_cookie.svg',
+    modelUrl: `${GOOSE_ASSET_BASE}/coockie-man.glb`,
+    modelScale: 1.08,
+  },
+  {
+    type: 'food_hotdog',
+    label: '热狗',
+    scale: 1.55,
+    aspect: 0.75,
+    score: 13,
+    icon: './images/item_food_hotdog.svg',
+    modelUrl: `${GOOSE_ASSET_BASE}/hotdog.glb`,
+    modelScale: 1.18,
+    modelYaw: Math.PI * 0.5,
+  },
+  {
+    type: 'food_sandwich',
+    label: '三明治',
+    scale: 1.42,
+    aspect: 0.95,
+    score: 12,
+    icon: './images/item_food_sandwich.svg',
+    modelUrl: `${GOOSE_ASSET_BASE}/sandwich.glb`,
+    modelScale: 1.15,
+  },
+  {
+    type: 'food_toast',
+    label: '吐司',
+    scale: 1.36,
+    aspect: 1.0,
+    score: 12,
+    icon: './images/item_food_toast.svg',
+    modelUrl: `${GOOSE_ASSET_BASE}/toast.glb`,
+    modelScale: 1.2,
+  },
+  {
+    type: 'food_pancake',
+    label: '煎饼',
+    scale: 1.5,
+    aspect: 0.9,
+    score: 13,
+    icon: './images/item_food_pancake.svg',
+    modelUrl: `${GOOSE_ASSET_BASE}/pancake-big.glb`,
+    modelScale: 1.22,
+  },
 ]
 
 const DOLL_MAP = Object.fromEntries(DOLL_TYPES.map((t) => [t.type, t]))
+const FOOD_TYPE_LIST = [
+  'food_icecream',
+  'food_cheese',
+  'food_cookie',
+  'food_hotdog',
+  'food_sandwich',
+  'food_toast',
+  'food_pancake',
+]
+const FOOD_TYPES = new Set(FOOD_TYPE_LIST)
+const DESK_TYPE_LIST = ['desk_notebook', 'desk_ruler', 'desk_stapler', 'desk_tape', 'tech_camera']
+const KITCHEN_TYPE_LIST = ['kitchen_kettle', 'kitchen_pan', 'kitchen_spatula', 'kitchen_mug']
+const CAMP_TYPE_LIST = ['camp_canteen', 'camp_flashlight', 'camp_compass', 'camp_can']
+
+const SCENES = [
+  {
+    key: 'tea',
+    label: '下午茶',
+    accent: '#f2708c',
+    favoredTypes: FOOD_TYPE_LIST,
+    bag: { base: 0xbfe6ff, deck: 0xe3f7ff, rim: 0x90c9ff, slotOpacity: 0.46 },
+    lights: { ambient: 0.46, hemi: 0.2, dir: 0.82, fill: 0.2, dirColor: 0xffffff, fillColor: 0xffe5ee },
+  },
+  {
+    key: 'market',
+    label: '菜市场',
+    accent: '#ff9f6e',
+    favoredTypes: [...KITCHEN_TYPE_LIST, ...CAMP_TYPE_LIST, ...FOOD_TYPE_LIST],
+    bag: { base: 0xffd9b5, deck: 0xfff0de, rim: 0xffb16a, slotOpacity: 0.5 },
+    lights: { ambient: 0.44, hemi: 0.22, dir: 0.86, fill: 0.22, dirColor: 0xfff3e6, fillColor: 0xffd3b3 },
+  },
+  {
+    key: 'desk',
+    label: '文具台',
+    accent: '#6aa9ff',
+    favoredTypes: [...DESK_TYPE_LIST, ...FOOD_TYPE_LIST],
+    bag: { base: 0xcfe2ff, deck: 0xe9f2ff, rim: 0x7fb3ff, slotOpacity: 0.44 },
+    lights: { ambient: 0.48, hemi: 0.22, dir: 0.8, fill: 0.2, dirColor: 0xf0f6ff, fillColor: 0xcfe4ff },
+  },
+]
 
 const TOOL_LABELS = {
   remove: '移出',
@@ -76,6 +208,13 @@ const COLLISION_SPECS = {
   snack_donut: { kind: 'sphere', r: 0.42 },
   tech_camera: { kind: 'box', w: 0.9, h: 0.62 },
   plant_pot: { kind: 'box', w: 0.8, h: 0.86 },
+  food_icecream: { kind: 'sphere', r: 0.38 },
+  food_cheese: { kind: 'box', w: 0.9, h: 0.72 },
+  food_cookie: { kind: 'box', w: 0.82, h: 0.92 },
+  food_hotdog: { kind: 'box', w: 1.08, h: 0.58 },
+  food_sandwich: { kind: 'box', w: 0.96, h: 0.76 },
+  food_toast: { kind: 'box', w: 0.82, h: 0.88 },
+  food_pancake: { kind: 'sphere', r: 0.46 },
 }
 
 function getCollisionSpec(type, w, h) {
@@ -90,15 +229,42 @@ function getCollisionSpec(type, w, h) {
   return { kind: 'sphere', radius }
 }
 
+const ENVIRONMENT_URL = `${GOOSE_ASSET_BASE}/scene.gltf`
+const ICON_URLS = DOLL_TYPES.map((t) => t.icon || `./images/item_${t.type}.svg`)
+const MODEL_MANIFEST = DOLL_TYPES.filter((t) => t.modelUrl).map((t) => ({
+  kind: 'model',
+  type: t.type,
+  url: t.modelUrl,
+}))
 const ASSETS = [
-  './images/decor_palette.svg',
-  './images/decor_brushes.svg',
-  './images/decor_powder.svg',
-  ...DOLL_TYPES.map((t) => `./images/item_${t.type}.svg`),
+  { kind: 'image', url: './images/decor_palette.svg' },
+  { kind: 'image', url: './images/decor_brushes.svg' },
+  { kind: 'image', url: './images/decor_powder.svg' },
+  ...ICON_URLS.map((url) => ({ kind: 'image', url })),
+  ...MODEL_MANIFEST,
+  { kind: 'environment', key: 'gooseScene', url: ENVIRONMENT_URL },
 ]
+
+const gltfLoader = new GLTFLoader()
+const modelCache = new Map()
+const environmentCache = {
+  template: null,
+  size: new THREE.Vector3(),
+  center: new THREE.Vector3(),
+}
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
+}
+
+function hashString(str) {
+  let h = 2166136261 >>> 0
+  const s = String(str || '')
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
 }
 
 function qs(sel) {
@@ -130,6 +296,292 @@ function getDollMeta(type) {
 function getScoreForType(type) {
   const meta = getDollMeta(type)
   return Number.isFinite(meta.score) ? meta.score : 10
+}
+
+function getIconForType(type) {
+  const meta = getDollMeta(type)
+  return meta.icon || `./images/item_${meta.type}.svg`
+}
+
+function normalizeItemsPerType(count) {
+  const raw = Math.max(3, Math.round(count || 0))
+  return Math.ceil(raw / 3) * 3
+}
+
+function plannedTypeCount(cfg) {
+  const requested = Number.isFinite(cfg?.activeTypes) ? cfg.activeTypes : DOLL_TYPES.length
+  return clamp(Math.round(requested), 3, DOLL_TYPES.length)
+}
+
+function shuffled(list, rng) {
+  const copy = [...list]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+function prioritizeTypes(list, favoredSet, rng) {
+  const ordered = shuffled(list, rng)
+  if (!favoredSet || favoredSet.size === 0) return ordered
+  const favored = []
+  const rest = []
+  for (const item of ordered) {
+    if (favoredSet.has(item.type)) favored.push(item)
+    else rest.push(item)
+  }
+  return [...favored, ...rest]
+}
+
+function pickScene(seed) {
+  const safeSeed = (seed || 1) >>> 0
+  const sceneRng = mulberry32((safeSeed ^ 0x9e3779b9) >>> 0)
+  const index = Math.floor(sceneRng() * SCENES.length)
+  return SCENES[index] || SCENES[0]
+}
+
+function setThemeColor(color) {
+  if (!color) return
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', color)
+}
+
+function applySceneMaterials(scene) {
+  const bag = scene?.bag
+  if (!bag) return
+  if (Number.isFinite(bag.base)) BAG_MATERIALS.base.color.setHex(bag.base)
+  if (Number.isFinite(bag.deck)) BAG_MATERIALS.deck.color.setHex(bag.deck)
+  if (Number.isFinite(bag.rim)) BAG_MATERIALS.rim.color.setHex(bag.rim)
+  if (Number.isFinite(bag.slotOpacity)) {
+    BAG_MATERIALS.slot.opacity = bag.slotOpacity
+    BAG_MATERIALS.slot.needsUpdate = true
+  }
+}
+
+function applySceneLighting(scene) {
+  if (!three.ready) return
+  const lights = scene?.lights
+  if (!lights) return
+  if (three.ambientLight && Number.isFinite(lights.ambient)) three.ambientLight.intensity = lights.ambient
+  if (three.hemiLight && Number.isFinite(lights.hemi)) three.hemiLight.intensity = lights.hemi
+  if (three.dirLight && Number.isFinite(lights.dir)) three.dirLight.intensity = lights.dir
+  if (three.fillLight && Number.isFinite(lights.fill)) three.fillLight.intensity = lights.fill
+  if (three.dirLight && Number.isFinite(lights.dirColor)) three.dirLight.color.setHex(lights.dirColor)
+  if (three.fillLight && Number.isFinite(lights.fillColor)) three.fillLight.color.setHex(lights.fillColor)
+}
+
+function applyScene(scene) {
+  const picked = scene || pickScene(state.seed)
+  if (!picked) return
+  state.scene = picked
+  state.sceneKey = picked.key
+  setThemeColor(picked.accent)
+  applySceneMaterials(picked)
+  applySceneLighting(picked)
+  if (three.ready) {
+    buildBag3D()
+    rebuildEnvironment()
+  }
+}
+
+function selectActiveTypes(cfg, rng, scene = state.scene) {
+  const count = plannedTypeCount(cfg)
+  const favoredSet = new Set(scene?.favoredTypes || [])
+  const food = DOLL_TYPES.filter((t) => FOOD_TYPES.has(t.type))
+  const other = DOLL_TYPES.filter((t) => !FOOD_TYPES.has(t.type))
+  const selected = []
+
+  const foodPickCount = Math.min(food.length, count)
+  const foodShuffled = prioritizeTypes(food, favoredSet, rng)
+  selected.push(...foodShuffled.slice(0, foodPickCount))
+
+  const remaining = count - selected.length
+  if (remaining > 0) {
+    const otherShuffled = prioritizeTypes(other, favoredSet, rng)
+    selected.push(...otherShuffled.slice(0, remaining))
+  }
+
+  if (selected.length < count) {
+    const remainingFood = foodShuffled.slice(foodPickCount)
+    selected.push(...remainingFood.slice(0, count - selected.length))
+  }
+
+  return selected
+}
+
+function markSharedMaterials(root) {
+  root.traverse((child) => {
+    if (!child.isMesh) return
+    if (child.geometry) {
+      child.geometry.userData = child.geometry.userData || {}
+      child.geometry.userData.shared = true
+    }
+    if (!child.material) return
+    const mark = (mat) => {
+      if (!mat) return
+      mat.userData = mat.userData || {}
+      mat.userData.shared = true
+      if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace
+      mat.needsUpdate = true
+    }
+    if (Array.isArray(child.material)) child.material.forEach(mark)
+    else mark(child.material)
+  })
+}
+
+function computeBounds(root) {
+  const box = new THREE.Box3().setFromObject(root)
+  const size = new THREE.Vector3()
+  const center = new THREE.Vector3()
+  if (box.isEmpty()) {
+    size.set(1, 1, 1)
+    center.set(0, 0, 0)
+  } else {
+    box.getSize(size)
+    box.getCenter(center)
+  }
+  return { size, center }
+}
+
+function registerModel(meta, gltf) {
+  const root = gltf?.scene || gltf?.scenes?.[0]
+  if (!root) return
+  markSharedMaterials(root)
+  const { size, center } = computeBounds(root)
+  modelCache.set(meta.type, { template: root, size, center })
+  if (state.initialized) rebuildMeshes()
+}
+
+function registerEnvironment(gltf) {
+  const root = gltf?.scene || gltf?.scenes?.[0]
+  if (!root) return
+  markSharedMaterials(root)
+  const { size, center } = computeBounds(root)
+  environmentCache.template = root
+  environmentCache.size.copy(size)
+  environmentCache.center.copy(center)
+  rebuildEnvironment()
+}
+
+function createModelInstance(doll, meta) {
+  const entry = modelCache.get(doll.type)
+  if (!entry) return null
+
+  const wrapper = new THREE.Group()
+  const model = entry.template.clone(true)
+  model.position.copy(entry.center).multiplyScalar(-1)
+  model.position.y += entry.size.y * 0.5
+
+  const maxDim = Math.max(entry.size.x, entry.size.y, entry.size.z) || 1
+  const targetSize = doll.size * 0.92
+  const baseScale = targetSize / maxDim
+  const scale = baseScale * (meta.modelScale || 1)
+  model.scale.setScalar(scale)
+  if (Number.isFinite(meta.modelYaw)) model.rotation.y = meta.modelYaw
+
+  wrapper.add(model)
+
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(Math.max(12, doll.size * 0.44), 40),
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.16,
+      roughness: 0.9,
+      metalness: 0.05,
+    })
+  )
+  disc.rotation.x = -Math.PI / 2
+  disc.position.y = 2
+  disc.receiveShadow = true
+  wrapper.add(disc)
+
+  return wrapper
+}
+
+function makeDecorDoll(type, size) {
+  const meta = getDollMeta(type)
+  const aspect = meta.aspect ?? APPROX_ASPECT
+  const w = size
+  const h = size * aspect
+  return {
+    id: -1,
+    type,
+    size,
+    aspect,
+    w,
+    h,
+    layer: 1,
+  }
+}
+
+function cloneMaterialForDecor(
+  mat,
+  { envMapIntensity = 0.12, minRoughness = 0.86, maxMetalness = 0.04, opacity = 0.28 } = {}
+) {
+  if (!mat) return mat
+  const cloned = mat.clone()
+  cloned.userData = cloned.userData || {}
+  cloned.userData.shared = false
+  if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 0, minRoughness)
+  if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, maxMetalness)
+  if ('envMapIntensity' in cloned) cloned.envMapIntensity = envMapIntensity
+  if ('transparent' in cloned) cloned.transparent = true
+  if ('opacity' in cloned) cloned.opacity = Math.min(cloned.opacity ?? 1, opacity)
+  cloned.depthWrite = false
+  cloned.needsUpdate = true
+  return cloned
+}
+
+function softenDecorMaterials(root, options) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return
+    if (Array.isArray(child.material)) {
+      child.material = child.material.map((m) => cloneMaterialForDecor(m, options))
+    } else {
+      child.material = cloneMaterialForDecor(child.material, options)
+    }
+    child.castShadow = true
+    child.receiveShadow = true
+    child.frustumCulled = false
+    child.renderOrder = -3
+  })
+}
+
+function stripDollUserData(root) {
+  const clear = (obj) => {
+    if (!obj || !obj.userData) return
+    delete obj.userData.dollId
+    delete obj.userData.type
+  }
+  clear(root)
+  root.traverse((child) => clear(child))
+}
+
+function createDecorMesh(type, size, rng, options) {
+  const meta = getDollMeta(type)
+  const doll = makeDecorDoll(type, size)
+  let mesh = meta.modelUrl ? createModelInstance(doll, meta) : null
+  if (!mesh) {
+    doll.id = -Math.max(1, Math.floor(rng() * 10_000))
+    mesh = createItemMesh(doll)
+  }
+  stripDollUserData(mesh)
+  softenDecorMaterials(mesh, options)
+  const scaleJitter = 0.72 + rng() * 0.18
+  mesh.scale.multiplyScalar(scaleJitter)
+  mesh.rotation.y = rng() * Math.PI * 2
+  mesh.rotation.z = (rng() * 2 - 1) * 0.12
+  mesh.renderOrder = -2
+  return mesh
+}
+
+function collectDecorTypes(scene, rng) {
+  const favored = scene?.favoredTypes?.filter((t) => modelCache.has(t)) || []
+  const fallback = [...modelCache.keys()]
+  const pool = favored.length ? [...favored, ...fallback.filter((t) => !favored.includes(t))] : fallback
+  return shuffled(pool, rng)
 }
 
 function makeSeed() {
@@ -170,28 +622,95 @@ function setUrlConfig({ modeKey, seed }) {
   window.history.replaceState({}, '', url)
 }
 
-function preloadAssets(urls, onProgress) {
+function enableDebugHooks() {
+  try {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('debug') !== '1') return
+    window.__goosegame = {
+      state,
+      three,
+      physics,
+      input,
+      resetGame,
+      pickDoll,
+      useToolHint,
+      useToolMatch,
+      useToolShuffle,
+    }
+    console.info('[goosegame] debug hooks enabled as window.__goosegame')
+  } catch {
+    // ignore
+  }
+}
+
+function preloadAssets(manifest, onProgress) {
+  const entries = manifest.map((entry) => (typeof entry === 'string' ? { kind: 'image', url: entry } : entry))
   let done = 0
-  const total = urls.length
+  const total = entries.length
   onProgress(0, total)
+
+  const finishOne = () => {
+    done += 1
+    onProgress(done, total)
+  }
+
+  const loadImage = (url) =>
+    new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        finishOne()
+        resolve()
+      }
+      img.onerror = () => {
+        finishOne()
+        resolve()
+      }
+      img.src = url
+    })
+
+  const loadModel = (entry) =>
+    new Promise((resolve) => {
+      const meta = getDollMeta(entry.type)
+      gltfLoader.load(
+        entry.url,
+        (gltf) => {
+          registerModel(meta, gltf)
+          finishOne()
+          resolve()
+        },
+        undefined,
+        () => {
+          finishOne()
+          resolve()
+        }
+      )
+    })
+
+  const loadEnvironment = (entry) =>
+    new Promise((resolve) => {
+      gltfLoader.load(
+        entry.url,
+        (gltf) => {
+          registerEnvironment(gltf)
+          finishOne()
+          resolve()
+        },
+        undefined,
+        () => {
+          finishOne()
+          resolve()
+        }
+      )
+    })
+
   return Promise.all(
-    urls.map(
-      (src) =>
-        new Promise((resolve) => {
-          const img = new Image()
-          img.onload = () => {
-            done += 1
-            onProgress(done, total)
-            resolve()
-          }
-          img.onerror = () => {
-            done += 1
-            onProgress(done, total)
-            resolve()
-          }
-          img.src = src
-        })
-    )
+    entries.map((entry) => {
+      if (entry.kind === 'image') return loadImage(entry.url)
+      if (entry.kind === 'model') return loadModel(entry)
+      if (entry.kind === 'environment') return loadEnvironment(entry)
+      finishOne()
+      return Promise.resolve()
+    })
   )
 }
 
@@ -319,6 +838,10 @@ const state = {
   nextId: 1,
   modeKey: 'easy',
   config: MODES.easy,
+  sceneKey: '',
+  scene: null,
+  activeTypes: [],
+  itemsPerTypeRound: normalizeItemsPerType(MODES.easy.itemsPerType),
 
   score: 0,
   bestScore: 0,
@@ -347,14 +870,7 @@ const state = {
   freezeUntil: 0,
   bonusAt: BONUS_STEP,
   reloadAfterGame: false,
-  tools: {
-    remove: 2,
-    match: 2,
-    hint: 3,
-    undo: 2,
-    freeze: 2,
-    shuffle: 1,
-  },
+  tools: { ...TOOL_DEFAULTS },
 }
 
 const three = {
@@ -363,6 +879,10 @@ const three = {
   composer: null,
   scene: null,
   camera: null,
+  ambientLight: null,
+  hemiLight: null,
+  dirLight: null,
+  fillLight: null,
   raycaster: new THREE.Raycaster(),
   pointer: new THREE.Vector2(),
   itemsGroup: null,
@@ -375,6 +895,10 @@ const three = {
   cameraDistance: 0,
   bowlGroup: null,
   bowlParts: [],
+  envGroup: null,
+  envParts: [],
+  bagGroup: null,
+  bagParts: [],
 }
 
 const input = {
@@ -391,6 +915,7 @@ const physics = {
   bodies: new Map(),
   walls: [],
   accumulator: 0,
+  lastIdleStep: 0,
   ready: false,
 }
 
@@ -440,19 +965,19 @@ function initThree() {
   renderer.setClearColor(0x000000, 0)
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 0.98
+  renderer.toneMappingExposure = 0.82
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(30, 1, 1, 4000)
+  const camera = new THREE.PerspectiveCamera(38, 1, 1, 4000)
   const envMap = makeEnvTexture()
   if (envMap) scene.environment = envMap
-  const ambient = new THREE.AmbientLight(0xffffff, 0.8)
-  const hemi = new THREE.HemisphereLight(0xffffff, 0xffe8ef, 0.4)
-  const dir = new THREE.DirectionalLight(0xffffff, 0.7)
+  const ambient = new THREE.AmbientLight(0xffffff, 0.62)
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xffe8ef, 0.32)
+  const dir = new THREE.DirectionalLight(0xffffff, 0.62)
   dir.position.set(120, 380, 160)
-  const fill = new THREE.DirectionalLight(0xffe5ee, 0.35)
+  const fill = new THREE.DirectionalLight(0xffe5ee, 0.28)
   fill.position.set(-140, 260, -120)
   dir.castShadow = true
   dir.shadow.mapSize.set(1024, 1024)
@@ -461,10 +986,14 @@ function initThree() {
 
   scene.add(ambient, hemi, dir, fill)
 
+  const envGroup = new THREE.Group()
+  scene.add(envGroup)
   const itemsGroup = new THREE.Group()
   scene.add(itemsGroup)
   const bowlGroup = new THREE.Group()
   scene.add(bowlGroup)
+  const bagGroup = new THREE.Group()
+  scene.add(bagGroup)
 
   const composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
@@ -483,12 +1012,18 @@ function initThree() {
   three.composer = composer
   three.scene = scene
   three.camera = camera
+  three.ambientLight = ambient
+  three.hemiLight = hemi
+  three.dirLight = dir
+  three.fillLight = fill
+  three.envGroup = envGroup
   three.itemsGroup = itemsGroup
   three.bowlGroup = bowlGroup
+  three.bagGroup = bagGroup
   if (envMap) {
-    for (const mat of Object.values(MATERIALS)) {
+    for (const mat of ALL_SHARED_MATERIALS) {
       mat.envMap = envMap
-      mat.envMapIntensity = 0.55
+      mat.envMapIntensity = 0.28
       mat.needsUpdate = true
     }
   }
@@ -496,7 +1031,9 @@ function initThree() {
   three.fxaaPass = fxaaPass
   three.ready = true
 
+  rebuildEnvironment()
   resizeThree()
+  buildBag3D()
   animateThree()
 }
 
@@ -535,6 +1072,7 @@ function initPhysics() {
   physics.world = world
   physics.itemMat = itemMat
   physics.wallMat = wallMat
+  physics.lastIdleStep = performance.now()
   physics.ready = true
 }
 
@@ -643,6 +1181,146 @@ function settlePhysics(steps = 6) {
   }
 }
 
+function rebuildEnvironment() {
+  if (!three.ready || !three.envGroup) return
+
+  const { width, height } = measureBoard()
+  const { radius, centerY } = getBowlMetrics(width, height)
+  const bowlCenterZ = centerY - height / 2
+
+  for (const part of three.envParts) {
+    three.envGroup.remove(part)
+    disposeObject(part)
+  }
+  three.envParts = []
+
+  const seedBase = (state.seed || 1) >>> 0
+  const decorSeed = (seedBase ^ hashString(state.sceneKey || state.modeKey) ^ 0xa511e9b3) >>> 0
+  const rng = mulberry32(decorSeed || 1)
+
+  const decorRoot = new THREE.Group()
+
+  const cam = three.camera
+  const planeY = 0
+  const dist = Math.max(1, Math.abs((cam?.position?.y ?? 900) - planeY))
+  const fovRad = ((cam?.fov ?? 30) * Math.PI) / 180
+  const halfHeight = Math.tan(fovRad / 2) * dist
+  const halfWidth = halfHeight * (three.width / three.height)
+  const maxRingRadius = Math.min(halfHeight, halfWidth) * 0.94
+  const safeMaxRingRadius = Math.max(radius * 1.08, maxRingRadius)
+
+  const sceneKey = state.sceneKey
+  const materialOptions =
+    sceneKey === 'market'
+      ? { envMapIntensity: 0.16, minRoughness: 0.82, maxMetalness: 0.06, opacity: 0.32 }
+      : sceneKey === 'desk'
+        ? { envMapIntensity: 0.1, minRoughness: 0.9, maxMetalness: 0.035, opacity: 0.22 }
+        : { envMapIntensity: 0.12, minRoughness: 0.9, maxMetalness: 0.04, opacity: 0.26 }
+
+  const types = collectDecorTypes(state.scene, rng)
+  if (!types.length) return
+
+  const decorCount = clamp(Math.round(radius / 32), 8, 14)
+  const ringRadius = clamp(radius * 1.14, radius * 1.04, safeMaxRingRadius)
+  const baseHeight = Math.max(6, radius * 0.025)
+  const baseSize = clamp(radius * 0.23, 42, 68)
+
+  for (let i = 0; i < decorCount; i++) {
+    const angle = (i / decorCount) * Math.PI * 2 + (rng() * 2 - 1) * 0.18
+    const type = types[i % types.length]
+    const size = baseSize * (0.82 + rng() * 0.24)
+    const deco = createDecorMesh(type, size, rng, materialOptions)
+    const x = Math.cos(angle) * ringRadius
+    const z = Math.sin(angle) * ringRadius + bowlCenterZ
+    deco.position.set(x, baseHeight + rng() * 8, z)
+    decorRoot.add(deco)
+  }
+
+  // A faint backdrop helps reduce the stark white center without overpowering gameplay.
+  const backdrop = new THREE.Mesh(
+    new THREE.CircleGeometry(radius * 1.28, 64),
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.04,
+      roughness: 1,
+      metalness: 0,
+      depthWrite: false,
+    })
+  )
+  backdrop.rotation.x = -Math.PI / 2
+  backdrop.position.set(0, 1, bowlCenterZ - radius * 0.12)
+  decorRoot.add(backdrop)
+
+  decorRoot.position.y = -radius * 0.02
+
+  three.envGroup.add(decorRoot)
+  three.envParts.push(decorRoot)
+}
+
+function buildBag3D() {
+  if (!three.ready || !three.bagGroup) return
+
+  const { width, height } = measureBoard()
+  const { radius } = getBowlMetrics(width, height)
+
+  const trayRect = ui.traySlots.getBoundingClientRect()
+  const trayTarget = screenToWorldOnPlane(trayRect.left + trayRect.width / 2, trayRect.top + trayRect.height / 2, 0)
+  const fallbackZ = height / 2 - radius * 0.06
+  const bagZ = Number.isFinite(trayTarget?.z) ? trayTarget.z : fallbackZ
+  const bagY = Math.max(8, radius * 0.06)
+
+  for (const part of three.bagParts) {
+    three.bagGroup.remove(part)
+    disposeObject(part)
+  }
+  three.bagParts = []
+
+  const slotCount = Math.max(3, state.config.maxTray)
+  const baseWidth = Math.min(width * 0.78, radius * 2.25)
+  const baseDepth = Math.max(64, radius * 0.28)
+  const baseHeight = Math.max(12, radius * 0.06)
+
+  const base = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, baseHeight, baseDepth), BAG_MATERIALS.base)
+  base.position.set(0, bagY, bagZ)
+  base.castShadow = true
+  base.receiveShadow = true
+
+  const deck = new THREE.Mesh(
+    new THREE.BoxGeometry(baseWidth * 0.98, baseHeight * 0.24, baseDepth * 0.92),
+    BAG_MATERIALS.deck
+  )
+  deck.position.copy(base.position)
+  deck.position.y += baseHeight * 0.42
+  deck.receiveShadow = true
+
+  const rim = new THREE.Mesh(
+    new THREE.BoxGeometry(baseWidth * 1.02, baseHeight * 0.34, baseDepth * 0.1),
+    BAG_MATERIALS.rim
+  )
+  rim.position.set(0, bagY + baseHeight * 0.34, bagZ + baseDepth * 0.46)
+  rim.castShadow = true
+  rim.receiveShadow = true
+
+  const slotSpacing = (baseWidth * 0.84) / slotCount
+  const slotStart = -slotSpacing * (slotCount - 1) * 0.5
+  const slotRadius = Math.min(slotSpacing * 0.32, baseDepth * 0.24)
+  const slotHeight = baseHeight * 0.72
+  const slots = []
+
+  for (let i = 0; i < slotCount; i++) {
+    const slot = new THREE.Mesh(new THREE.CylinderGeometry(slotRadius, slotRadius, slotHeight, 24), BAG_MATERIALS.slot)
+    slot.position.set(slotStart + i * slotSpacing, bagY + baseHeight * 0.62, bagZ)
+    slot.receiveShadow = true
+    slot.castShadow = false
+    slot.userData.baseOpacity = BAG_MATERIALS.slot.opacity ?? 1
+    slots.push(slot)
+  }
+
+  three.bagGroup.add(base, deck, rim, ...slots)
+  three.bagParts.push(base, deck, rim, ...slots)
+}
+
 function buildBowl() {
   if (!three.ready || !three.bowlGroup) return
   const { width, height } = measureBoard()
@@ -654,71 +1332,32 @@ function buildBowl() {
   }
   three.bowlParts = []
 
-  const wallMat = makeMaterial(0xf7f7f7, 0.38, 0.04)
-  const rimMat = makeMaterial(0xffffff, 0.18, 0.08)
-  const baseMat = makeMaterial(0xf1f1f1, 0.55, 0.0)
-  const innerMat = makeMaterial(0xe6e6ea, 0.65, 0.0)
-  const wallHeight = Math.max(52, radius * 0.28)
-
-  const wall = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius * 0.98, wallHeight, 64, 1, true),
-    wallMat
-  )
-  wall.position.set(0, wallHeight * 0.3, centerY - height / 2)
-  wall.receiveShadow = true
-
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(radius, 5, 16, 64), rimMat)
-  rim.rotation.x = Math.PI / 2
-  rim.position.set(0, wallHeight * 0.6, centerY - height / 2)
-  rim.receiveShadow = true
-
-  const base = new THREE.Mesh(new THREE.CircleGeometry(radius * 0.975, 64), baseMat)
+  // Visually minimize the bowl so the scene reads closer to the reference app:
+  // keep physics walls, but render only a very faint ground/shadow.
+  const baseMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 1,
+    metalness: 0,
+    transparent: true,
+    opacity: 0.035,
+    depthWrite: false,
+  })
+  const base = new THREE.Mesh(new THREE.CircleGeometry(radius * 1.04, 64), baseMat)
   base.rotation.x = -Math.PI / 2
-  base.position.set(0, 0, centerY - height / 2)
+  base.position.set(0, 0.5, centerY - height / 2)
   base.receiveShadow = true
-
-  const innerWall = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * 0.96, radius * 0.94, wallHeight * 0.85, 64, 1, true),
-    innerMat
-  )
-  innerWall.position.set(0, wallHeight * 0.28, centerY - height / 2)
-  innerWall.receiveShadow = true
+  base.renderOrder = -2
 
   const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(radius * 0.9, 64),
-    new THREE.MeshStandardMaterial({ color: 0x000000, transparent: true, opacity: 0.08 })
+    new THREE.CircleGeometry(radius * 0.92, 64),
+    new THREE.MeshStandardMaterial({ color: 0x000000, transparent: true, opacity: 0.045, depthWrite: false })
   )
   shadow.rotation.x = -Math.PI / 2
   shadow.position.set(0, 1, centerY - height / 2)
+  shadow.renderOrder = -1
 
-  const gooseMat = makeMaterial(0xf7f7f7, 0.25, 0.1)
-  const beakMat = makeMaterial(0xf2b740, 0.35, 0.08)
-  const goose = new THREE.Group()
-  const body = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.08, 20, 14), gooseMat)
-  body.scale.set(1.2, 0.85, 1.1)
-  const neck = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * 0.02, radius * 0.03, radius * 0.12, 12),
-    gooseMat
-  )
-  neck.position.set(radius * 0.08, radius * 0.08, 0)
-  neck.rotation.z = -0.4
-  const head = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.04, 16, 12), gooseMat)
-  head.position.set(radius * 0.14, radius * 0.16, 0)
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.02, radius * 0.06, 12), beakMat)
-  beak.rotation.z = -Math.PI / 2
-  beak.position.set(radius * 0.19, radius * 0.16, 0)
-  goose.add(body, neck, head, beak)
-  goose.position.set(-radius * 0.35, wallHeight * 0.5, centerY - height / 2 - radius * 0.18)
-  goose.rotation.y = Math.PI * 0.08
-  goose.traverse((child) => {
-    if (child.isMesh) {
-      child.castShadow = true
-      child.receiveShadow = true
-    }
-  })
-
-  three.bowlGroup.add(wall, rim, base, innerWall, shadow, goose)
-  three.bowlParts.push(wall, rim, base, innerWall, shadow, goose)
+  three.bowlGroup.add(base, shadow)
+  three.bowlParts.push(base, shadow)
 }
 
 function resizeThree() {
@@ -823,6 +1462,25 @@ const MATERIALS = {
   dark: makeMaterial(0x3d3f47, 0.6, 0.2),
 }
 
+const BAG_MATERIALS = {
+  base: makeMaterial(0xbfe6ff, 0.42, 0.05),
+  deck: makeMaterial(0xe3f7ff, 0.3, 0.02),
+  rim: makeMaterial(0x90c9ff, 0.45, 0.08),
+  slot: (() => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.46,
+      roughness: 0.38,
+      metalness: 0.04,
+    })
+    mat.userData.shared = true
+    return mat
+  })(),
+}
+
+const ALL_SHARED_MATERIALS = [...Object.values(MATERIALS), ...Object.values(BAG_MATERIALS)]
+
 function addBase(geometry, material, yOffset = 0) {
   geometry.translate(0, yOffset, 0)
   return new THREE.Mesh(geometry, material)
@@ -830,6 +1488,7 @@ function addBase(geometry, material, yOffset = 0) {
 
 function createItemMesh(doll) {
   const group = new THREE.Group()
+  const meta = getDollMeta(doll.type)
   const w = doll.w
   const h = doll.h
   const base = Math.min(w, h)
@@ -845,7 +1504,11 @@ function createItemMesh(doll) {
   const gray = MATERIALS.gray
   const dark = MATERIALS.dark
 
-  switch (doll.type) {
+  const modelInstance = meta.modelUrl ? createModelInstance(doll, meta) : null
+  if (modelInstance) {
+    group.add(modelInstance)
+  } else {
+    switch (doll.type) {
     case 'kitchen_kettle': {
       if (!pink.map) pink.map = makeGradientTexture(['#ffd3dc', '#ff7f98', '#e35b74'])
       const body = addBase(new THREE.SphereGeometry(base * 0.32, 24, 16), pink, base * 0.28)
@@ -1013,6 +1676,7 @@ function createItemMesh(doll) {
       group.add(box)
     }
   }
+  }
 
   group.userData.dollId = doll.id
   group.userData.type = doll.type
@@ -1032,7 +1696,7 @@ function createItemMesh(doll) {
 
 function disposeObject(obj) {
   obj.traverse((child) => {
-    if (child.geometry) child.geometry.dispose()
+    if (child.geometry && !child.geometry.userData?.shared) child.geometry.dispose()
     if (child.material) {
       const disposeMat = (mat) => {
         if (mat?.userData?.shared) return
@@ -1077,6 +1741,29 @@ function rebuildMeshes() {
   syncMeshes()
 }
 
+function applyAttractorForces(centerZ, radius, intensity = 1) {
+  if (!physics.ready) return
+  const strength = clamp(intensity, 0, 2)
+  if (strength <= 0.001) return
+  const maxR = Math.max(60, radius * 0.94)
+  const basePull = Math.max(170, radius * 1.6) * strength
+  const pullScale = basePull / maxR
+
+  for (const doll of state.dolls) {
+    if (!doll.body || doll.animating) continue
+    const body = doll.body
+    const dx = -body.position.x
+    const dz = centerZ - body.position.z
+    const dist = Math.hypot(dx, dz)
+    if (!Number.isFinite(dist) || dist < 0.001) continue
+    const nx = dx / dist
+    const nz = dz / dist
+    const pull = clamp(dist, 0, maxR) * pullScale
+    const force = pull * (body.mass || 1)
+    body.applyForce(new CANNON.Vec3(nx * force, 0, nz * force), body.position)
+  }
+}
+
 function updateMeshes() {
   if (!three.ready) return
   if (!physics.ready) return
@@ -1091,14 +1778,27 @@ function updateMeshes() {
   const bowlCenterZ = centerY - height / 2
   if (!state.containerRadius) state.containerRadius = radius
   const physicsActive = input.dragging || now - input.lastPushAt < 360
+  const idleDue = !physicsActive && now - physics.lastIdleStep >= PHYSICS_IDLE_STEP_MS
 
   if (physicsActive) {
     const step = 1 / 60
     physics.accumulator += dt
     while (physics.accumulator >= step) {
+      applyAttractorForces(bowlCenterZ, radius)
       physics.world.step(step)
       physics.accumulator -= step
     }
+    physics.lastIdleStep = now
+  } else if (idleDue) {
+    // Even when idle, run a tiny number of physics steps to keep items clustered,
+    // similar to the always-on attractor feel in the reference implementation.
+    const step = 1 / 60
+    physics.accumulator = 0
+    for (let i = 0; i < PHYSICS_IDLE_STEPS; i++) {
+      applyAttractorForces(bowlCenterZ, radius, PHYSICS_IDLE_ATTRACTOR)
+      physics.world.step(step)
+    }
+    physics.lastIdleStep = now
   } else {
     physics.accumulator = 0
   }
@@ -1302,15 +2002,25 @@ function getSelectedModeKey() {
   return MODES[modeKey] ? modeKey : 'easy'
 }
 
+function updateModeDesc(cfg = state.config) {
+  const typesCount = state.activeTypes?.length ? state.activeTypes.length : plannedTypeCount(cfg)
+  const perType = state.itemsPerTypeRound || normalizeItemsPerType(cfg.itemsPerType)
+  const total = perType * typesCount
+  const plannedScene = state.scene || (state.seed ? pickScene(state.seed) : null)
+  const sceneText = plannedScene?.label ? ` · 场景 ${plannedScene.label}` : ''
+  ui.modeDesc.textContent = `${total} 个物品 · 倒计时 ${formatTime(cfg.seconds)} · ${cfg.maxTray} 格待合成栏 · 局号 ${state.seed}${sceneText}`
+}
+
 function setMode(modeKey) {
   const key = MODES[modeKey] ? modeKey : 'easy'
   state.modeKey = key
   state.config = MODES[key]
+  state.itemsPerTypeRound = normalizeItemsPerType(state.config.itemsPerType)
+  state.activeTypes = []
   const radio = ui.help.querySelector(`input[name="mode"][value="${key}"]`)
   if (radio) radio.checked = true
 
-  const total = state.config.itemsPerType * DOLL_TYPES.length
-  ui.modeDesc.textContent = `${total} 个物品 · 倒计时 ${formatTime(state.config.seconds)} · ${state.config.maxTray} 格待合成栏 · 局号 ${state.seed}`
+  updateModeDesc(state.config)
 }
 
 function initTray(maxTray) {
@@ -1381,19 +2091,20 @@ function clampPointToCircle(cx, cy, radius, x, y, margin = 0) {
   return { x: cx + nx * maxR, y: cy + ny * maxR }
 }
 
-function computeSizes(boardW) {
+function computeSizes(boardW, types = state.activeTypes?.length ? state.activeTypes : DOLL_TYPES) {
+  const typesToUse = types?.length ? types : DOLL_TYPES
   const baseMin = clamp(Math.round(boardW * 0.085), 44, 92)
   const baseMax = baseMin * 3
   const sizes = Object.fromEntries(
-    DOLL_TYPES.map((t) => {
+    typesToUse.map((t) => {
       const raw = Math.round(clamp(baseMin * t.scale, baseMin, baseMax))
       const scaled = Math.round(raw * ITEM_SCALE)
       return [t.type, Math.max(28, scaled)]
     })
   )
   const values = Object.values(sizes)
-  const minSize = Math.min(...values)
-  const maxSize = Math.max(...values)
+  const minSize = values.length ? Math.min(...values) : baseMin
+  const maxSize = values.length ? Math.max(...values) : baseMax
   return { minSize, maxSize, sizes }
 }
 
@@ -1406,13 +2117,15 @@ function bias01(value01, power) {
   return 1 - Math.pow(1 - v, power)
 }
 
-function generateDolls(boardW, boardH, cfg, rng) {
-  const { sizes } = computeSizes(boardW)
+function generateDolls(boardW, boardH, cfg, rng, activeTypes, perTypeCount) {
+  const types = activeTypes?.length ? activeTypes : DOLL_TYPES
+  const itemsPerType = normalizeItemsPerType(perTypeCount ?? cfg.itemsPerType)
+  const { sizes } = computeSizes(boardW, types)
   const dolls = []
   let id = 1
 
-  for (const t of DOLL_TYPES) {
-    for (let i = 0; i < cfg.itemsPerType; i++) {
+  for (const t of types) {
+    for (let i = 0; i < itemsPerType; i++) {
       const dollId = id++
       const size = sizes[t.type]
       const w = size
@@ -1461,7 +2174,7 @@ function generateDolls(boardW, boardH, cfg, rng) {
         id: dollId,
         type: t.type,
         label: t.label,
-        image: `./images/item_${t.type}.svg`,
+        image: getIconForType(t.type),
         size,
         aspect,
         x,
@@ -1503,7 +2216,7 @@ function generateDolls(boardW, boardH, cfg, rng) {
 function createDollFromType(type, rng) {
   const meta = getDollMeta(type)
   const { width } = measureBoard()
-  const { sizes } = computeSizes(width)
+  const { sizes } = computeSizes(width, state.activeTypes)
   const size = sizes[type] || sizes[meta.type] || Math.max(28, Math.round(width * 0.06))
   const aspect = meta.aspect ?? APPROX_ASPECT
   const w = size
@@ -1515,7 +2228,7 @@ function createDollFromType(type, rng) {
     id: dollId,
     type,
     label: meta.label,
-    image: `./images/item_${type}.svg`,
+    image: getIconForType(type),
     size,
     aspect,
     x: 0,
@@ -1561,17 +2274,23 @@ function getRemainingCount() {
   return state.dolls.length + state.pool.length
 }
 
-function computeMaxVisible(width, height, cfg) {
+function computeMaxVisible(width, height, cfg, activeTypes = state.activeTypes, perTypeCount = state.itemsPerTypeRound) {
   const { radius } = getBowlMetrics(width, height)
-  const { sizes } = computeSizes(width)
+  const types = activeTypes?.length ? activeTypes : DOLL_TYPES
+  const normalizedPerType = normalizeItemsPerType(perTypeCount || cfg.itemsPerType)
+  const { sizes } = computeSizes(width, types)
   const avgSize =
-    Object.values(sizes).reduce((sum, size) => sum + size, 0) / Math.max(1, DOLL_TYPES.length)
+    types.reduce((sum, t) => sum + (sizes[t.type] || sizes[getDollMeta(t.type).type] || 64), 0) /
+    Math.max(1, types.length)
   const area = Math.PI * radius * radius
-  const itemArea = avgSize * avgSize * 1.35
+  // Slightly denser board improves match opportunities without overwhelming the scene.
+  const itemArea = avgSize * avgSize * 1.18
   const raw = Math.floor(area / itemArea)
-  const total = cfg.itemsPerType * DOLL_TYPES.length
-  const desired = Math.floor(raw * 0.6)
-  return clamp(desired, Math.min(12, total), Math.min(36, total))
+  const total = normalizedPerType * types.length
+  const desired = Math.floor(raw * 0.72)
+  const minVisible = cfg?.key === 'hard' ? 16 : cfg?.key === 'normal' ? 15 : 14
+  const maxVisible = cfg?.key === 'hard' ? 46 : cfg?.key === 'normal' ? 44 : 42
+  return clamp(desired, Math.min(minVisible, total), Math.min(maxVisible, total))
 }
 
 function updateSpawnRadius() {
@@ -1580,9 +2299,12 @@ function updateSpawnRadius() {
   state.containerRadius = radius
   const remaining = getRemainingCount()
   const ratio = state.totalItems ? remaining / state.totalItems : 1
-  const minFactor = 0.3
-  const curve = Math.pow(clamp(ratio, 0, 1), 0.78)
-  state.spawnRadius = radius * (minFactor + (1 - minFactor) * curve)
+  // Keep items more clustered like the reference pile while still expanding
+  // slightly when many items remain.
+  const minFactor = 0.22
+  const curve = Math.pow(clamp(ratio, 0, 1), 0.88)
+  const factor = minFactor + (1 - minFactor) * curve * 0.94
+  state.spawnRadius = radius * factor
 }
 
 function placeDollInRadius(doll, width, height, radius, existing, rng) {
@@ -1653,13 +2375,54 @@ function placeDollInRadius(doll, width, height, radius, existing, rng) {
   }
 }
 
+function getTrayTypeCounts() {
+  const counts = Object.create(null)
+  for (const item of state.selected) {
+    counts[item.type] = (counts[item.type] || 0) + 1
+  }
+  return counts
+}
+
+function pickAssistTypeFromTray() {
+  if (!state.selected.length) return ''
+  const counts = getTrayTypeCounts()
+  const entries = Object.entries(counts)
+  if (!entries.length) return ''
+  entries.sort((a, b) => b[1] - a[1])
+  const best = entries[0]
+  return best ? best[0] : ''
+}
+
+function takeFromPoolWithAssist(assistType, rng, probability = 0.9) {
+  if (!state.pool.length) return null
+  if (!assistType) return state.pool.shift()
+
+  // Only scan a prefix to avoid fully deterministic outcomes.
+  const maxScan = Math.min(36, state.pool.length)
+  const candidates = []
+  for (let i = 0; i < maxScan; i++) {
+    if (state.pool[i]?.type === assistType) candidates.push(i)
+  }
+  if (candidates.length && rng() < probability) {
+    const pickIndex = candidates[Math.floor(rng() * candidates.length)]
+    const [picked] = state.pool.splice(pickIndex, 1)
+    return picked || null
+  }
+  return state.pool.shift()
+}
+
 function spawnFromPool(count) {
   const { width, height } = measureBoard()
   const existing = [...state.dolls]
   const radius = Math.min(state.spawnRadius || state.containerRadius, state.containerRadius || 0)
   const spawned = []
+  const pressure = state.selected.length >= Math.max(3, state.config.maxTray - 2)
+  const assistType = pressure ? pickAssistTypeFromTray() : ''
+  const pressureRatio = clamp(state.selected.length / Math.max(1, state.config.maxTray), 0, 1)
+  const assistProb = clamp(0.58 + pressureRatio * 0.35, 0.58, 0.93)
   for (let i = 0; i < count && state.pool.length; i++) {
-    const doll = state.pool.shift()
+    const doll = takeFromPoolWithAssist(assistType, state.rng, assistProb)
+    if (!doll) break
     doll.layer = Math.floor(state.rng() * state.config.layerMax) + 1
     doll.visualYaw = 0
     doll.tilt = 0
@@ -1890,6 +2653,44 @@ function canPlaceIntoTray(nextType) {
   if (state.selected.length < state.config.maxTray) return true
   const same = state.selected.filter((s) => s.type === nextType).length
   return same >= 2
+}
+
+function tryAutoRescueTray(nextType) {
+  if (canPlaceIntoTray(nextType)) return true
+  if (state.tools.remove <= 0 || state.selected.length === 0) return false
+
+  // Spend one remove tool to free a slot instead of instantly ending the run.
+  consumeTool('remove')
+  const removed = state.selected.pop()
+  renderTray()
+
+  if (removed?.type) {
+    const restored = createDollFromType(removed.type, state.rng)
+    state.pool.unshift(restored)
+    toast('自动使用移出道具，腾出 1 格')
+  }
+
+  return canPlaceIntoTray(nextType)
+}
+
+function isTrayDeadlocked() {
+  if (state.selected.length < state.config.maxTray) return false
+
+  // Available tools can still rescue the run.
+  if (state.tools.remove > 0 || state.tools.match > 0 || state.tools.shuffle > 0 || state.tools.undo > 0) {
+    return false
+  }
+
+  const counts = getTrayTypeCounts()
+  const candidateTypes = Object.keys(counts).filter((t) => counts[t] >= 2)
+  if (!candidateTypes.length) return true
+
+  // If any needed type is currently pickable, the player still has a move.
+  for (const t of candidateTypes) {
+    if (state.dolls.some((d) => d.type === t && !d.blocked && !d.animating)) return false
+  }
+
+  return true
 }
 
 function insertIndexForType(selected, type) {
@@ -2146,9 +2947,12 @@ async function pickDoll(dollId) {
   }
 
   if (!canPlaceIntoTray(doll.type)) {
-    state.sound.lose()
-    endGame('栏已满', '待合成栏放不下新的物品了')
-    return
+    const rescued = tryAutoRescueTray(doll.type)
+    if (!rescued) {
+      state.sound.lose()
+      endGame('栏已满', '待合成栏放不下新的物品了')
+      return
+    }
   }
 
   state.busy = true
@@ -2217,9 +3021,9 @@ async function pickDoll(dollId) {
     return
   }
 
-  if (state.selected.length >= state.config.maxTray) {
+  if (isTrayDeadlocked()) {
     state.sound.lose()
-    endGame('栏已满', '待合成栏已满，无法继续放置')
+    endGame('栏已满', '待合成栏已满，且没有可凑齐的物品了')
     return
   }
 
@@ -2236,8 +3040,17 @@ function resetGame(seed, modeKey) {
   state.rng = mulberry32(state.seed)
   setUrlConfig({ modeKey, seed: state.seed })
   setMode(modeKey)
+  state.itemsPerTypeRound = normalizeItemsPerType(state.config.itemsPerType)
+  state.scene = pickScene(state.seed)
+  applyScene(state.scene)
+  const typeRng = mulberry32((state.seed ^ 0x85ebca6b) >>> 0)
+  state.activeTypes = selectActiveTypes(state.config, typeRng, state.scene)
+  state.totalItems = state.itemsPerTypeRound * state.activeTypes.length
+  updateModeDesc(state.config)
 
   initTray(state.config.maxTray)
+  buildBag3D()
+  rebuildEnvironment()
   setOverlay(false)
   setPause(false)
 
@@ -2250,12 +3063,11 @@ function resetGame(seed, modeKey) {
   state.lastMergeAt = 0
   state.mergeCombo = 0
   state.lastBlockUpdate = 0
-  state.totalItems = state.config.itemsPerType * DOLL_TYPES.length
   state.pool = []
   state.maxVisible = 0
   state.containerRadius = 0
   state.spawnRadius = 0
-  state.tools = { remove: 2, match: 2, hint: 3, undo: 2, freeze: 2, shuffle: 1 }
+  state.tools = getInitialTools(state.modeKey)
   state.freezeUntil = 0
   state.bonusAt = BONUS_STEP
   state.hint = null
@@ -2268,13 +3080,14 @@ function resetGame(seed, modeKey) {
   setTimerUI(state.timer)
   renderTray()
   setToolUI()
+  setRemainUI(state.totalItems)
 
   const { width, height } = measureBoard()
-  const allDolls = generateDolls(width, height, state.config, state.rng)
+  const allDolls = generateDolls(width, height, state.config, state.rng, state.activeTypes, state.itemsPerTypeRound)
   state.pool = allDolls
   state.dolls = []
   state.nextId = allDolls.length + 1
-  state.maxVisible = computeMaxVisible(width, height, state.config)
+  state.maxVisible = computeMaxVisible(width, height, state.config, state.activeTypes, state.itemsPerTypeRound)
   applyBowlCompression()
   replenishBoard()
   rebuildBodies()
@@ -2396,8 +3209,12 @@ function bindEvents() {
     if (t.name !== 'mode') return
     const next = getSelectedModeKey()
     const cfg = MODES[next]
-    const total = cfg.itemsPerType * DOLL_TYPES.length
-    ui.modeDesc.textContent = `${total} 个物品 · 倒计时 ${formatTime(cfg.seconds)} · ${cfg.maxTray} 格待合成栏 · 局号 ${state.seed}`
+    const perType = normalizeItemsPerType(cfg.itemsPerType)
+    const typesCount = plannedTypeCount(cfg)
+    const total = perType * typesCount
+    const scene = state.seed ? pickScene(state.seed) : null
+    const sceneText = scene?.label ? ` · 场景 ${scene.label}` : ''
+    ui.modeDesc.textContent = `${total} 个物品 · 倒计时 ${formatTime(cfg.seconds)} · ${cfg.maxTray} 格待合成栏 · 局号 ${state.seed}${sceneText}`
   })
 
   ui.board.addEventListener('pointermove', (e) => {
@@ -2520,7 +3337,7 @@ function bindEvents() {
   window.addEventListener('resize', () => {
     if (!state.initialized) return
     const { width, height } = measureBoard()
-    const { sizes } = computeSizes(width)
+    const { sizes } = computeSizes(width, state.activeTypes)
     for (const d of [...state.dolls, ...state.pool]) {
       const size = sizes[d.type] || d.size
       d.size = size
@@ -2534,7 +3351,7 @@ function bindEvents() {
       d.spin = 0
       d.spinVel = 0
     }
-    state.maxVisible = computeMaxVisible(width, height, state.config)
+    state.maxVisible = computeMaxVisible(width, height, state.config, state.activeTypes, state.itemsPerTypeRound)
     updateSpawnRadius()
     const radius = state.containerRadius || Math.min(width, height) * 0.46
     const placed = []
@@ -2545,6 +3362,9 @@ function bindEvents() {
     applyBowlCompression()
     replenishBoard()
     resizeThree()
+    applySceneLighting(state.scene)
+    rebuildEnvironment()
+    buildBag3D()
     buildBowlPhysics()
     rebuildBodies()
     rebuildMeshes()
@@ -2572,6 +3392,7 @@ async function boot() {
   setScoreUI(0)
 
   bindEvents()
+  enableDebugHooks()
 
   showLoading(true, '正在加载素材…')
   await preloadAssets(ASSETS, (done, total) => {

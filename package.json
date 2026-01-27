@@ -1,0 +1,41 @@
+{
+  "name": "goosegame-deluxe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "抓大鹅风格 3D 合成消除游戏（静态网页 + Electron 打包）",
+  "main": "electron/main.js",
+  "scripts": {
+    "check": "node --check main.js",
+    "electron:dev": "node electron/ensure-electron.js && env -u ELECTRON_RUN_AS_NODE electron .",
+    "electron:pack": "electron-builder --dir",
+    "electron:dist": "electron-builder --mac dir"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3",
+    "playwright": "^1.58.0",
+    "three": "0.162.0"
+  },
+  "build": {
+    "appId": "com.jerryxu.goosegame",
+    "productName": "Goose Catch Deluxe",
+    "files": [
+      "index.html",
+      "main.js",
+      "styles.css",
+      "manifest.webmanifest",
+      "service-worker.js",
+      "icons/**/*",
+      "images/**/*",
+      "vendor/**/*",
+      "assets/**/*",
+      "electron/**/*"
+    ],
+    "mac": {
+      "target": [
+        "dir"
+      ],
+      "category": "public.app-category.games"
+    }
+  }
+}
