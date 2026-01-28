@@ -47,18 +47,29 @@ button:hover {
 
 .app {
     display: flex;
-
     width: 100%;
     justify-content: center;
     align-items: center;
     height: 100%;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(1200px 900px at 20% 0%, #ffd8c7 0%, #f1c6da 35%, #b0c3ff 100%);
+}
 
-    background-color: #525252;
+.app::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(800px 600px at 80% 20%, rgba(255, 255, 255, 0.35), transparent 60%),
+        radial-gradient(900px 700px at 10% 80%, rgba(255, 255, 255, 0.2), transparent 65%);
+    pointer-events: none;
 }
 
 #r3f-canvas {
     border-radius: 40px;
-    
+    background: #f6f1ea;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
 }
 
 .wrapper {
@@ -68,10 +79,10 @@ button:hover {
     min-width: 400px;
     height: 800px;
     padding: 10px;
-    
-    background-color: #111;
+    background: linear-gradient(165deg, #f6f8fb 0%, #d7dfe6 100%);
     border-radius: 50px;
-    border: 2px solid #a3a3a3;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
     
     /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); */
 }
@@ -148,7 +159,8 @@ a {
     user-select: none;
     border-radius: 50px;
     z-index: 10;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
     
 }
 
@@ -167,8 +179,9 @@ a {
     left: 50%;
     border-radius: 20px;
     transform: translate(-50%, -50%);
-    background-color:  #f5f5f5;
-    border: 1px solid #262626;
+    background: linear-gradient(180deg, #ffffff 0%, #f4f4f4 100%);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
     /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); */
 
 }

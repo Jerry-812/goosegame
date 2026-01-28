@@ -97,3 +97,59 @@ iOS 体验建议：
 
 - 仓库中保留了微信小程序原型文件（`pages/`、`components/`、`app.json` 等），网页与 `.app` 不依赖它们。
 - 参考项目源码在：`goose-catch-main/`
+
+## 自动优化流水线（自动评测 → 生成补丁 → 评估 → PR → 可自动合并）
+
+已新增自动化闭环脚本与 GitHub Actions：
+
+- `scripts/eval.mjs`：Playwright 评测 FPS / load_ms / bundle_kb / console_errors
+- `scripts/score.mjs`：评分与对比逻辑
+- `scripts/guardrails.mjs`：护栏（仅允许改 `goose-catch-main/src`，限制 diff 大小）
+- `scripts/agent_generate_patch.mjs`：调用 LLM 生成 unified diff（写到 `agent.patch`）
+- `.github/workflows/auto-evolve.yml`：每天自动跑一次，可手动触发
+
+运行机制：
+
+1. 构建并评估 baseline
+2. LLM 生成补丁（只允许改 `goose-catch-main/src`）
+3. 重新构建与评估 candidate
+4. 指标提升 → 自动 PR → 可自动合并
+
+需要设置的 GitHub Secrets：
+
+- `LLM_ENDPOINT`：你的 LLM 接口地址（POST JSON，返回 patch）
+- `LLM_API_KEY`：可选
+
+如果不设置 `LLM_ENDPOINT`，补丁生成会失败并终止流程。
+
+## 本地 Ollama Patch Endpoint（无云 API Key 版本）
+
+你可以在本地用 Ollama + 一个极简 HTTP 服务提供 `LLM_ENDPOINT`。
+
+1. 安装并启动 Ollama（首次运行会拉模型）：
+
+```bash
+ollama pull qwen2.5-coder:7b
+```
+
+2. 启动补丁服务（默认监听 127.0.0.1:8787）：
+
+```bash
+node scripts/ollama_patch_server.mjs
+```
+
+3. 本地运行自动化（使用本地 endpoint）：
+
+```bash
+LLM_ENDPOINT=http://127.0.0.1:8787/patch npm run build
+LLM_ENDPOINT=http://127.0.0.1:8787/patch npm run preview -- --host 0.0.0.0 --port 4173 &
+```
+
+4. 若要让 GitHub Actions 也访问本地 endpoint：
+
+- 使用 **self-hosted runner**（运行在你本机）
+- 在仓库 **Settings → Variables** 添加：
+  - `RUNNER_LABELS`: `["self-hosted","macOS"]`（或你的 runner 标签）
+  - `LLM_ENDPOINT`: `http://127.0.0.1:8787/patch`
+
+> Action 里已支持 `vars.LLM_ENDPOINT`，若 Secrets 不设置也可走本地变量。

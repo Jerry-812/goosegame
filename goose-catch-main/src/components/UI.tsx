@@ -39,16 +39,6 @@ const UI = () => {
                                 <button onClick={handleStartOver}><RotateCcw size={20}/>再来</button>
                             </>
                         )}
-                        <footer>
-                            <div className="footer-text"><a
-                                href="https://yuminghuang.com"
-                                target="_blank"
-                            >@Yuming Huang</a></div>
-                            <div className="footer-text"><a
-                                href="https://github.com/Yuming0929/goose-catch/tree/main"
-                                target="_blank"
-                            >Github Repo</a></div>
-                        </footer>
                     </div>
                 </div>
 
