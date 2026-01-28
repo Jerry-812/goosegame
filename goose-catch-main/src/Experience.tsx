@@ -25,10 +25,11 @@ const Experience = () => {
             <Bag />
 
 
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[-5, 10, 0]} intensity={1} />
+            <ambientLight intensity={0.6} />
+            <hemisphereLight intensity={0.45} groundColor="#bdbdbd" color="#ffffff" />
+            <directionalLight position={[-5, 10, 2]} intensity={1.1} />
 
-            <color args={['#c5c5c5']} attach="background" />
+            <color args={['#d7d7d7']} attach="background" />
         </Physics>
 
     </>

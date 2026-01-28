@@ -15,6 +15,8 @@ function App() {
   const lose = useGameStore((state) => state.lose);
   // const gamePhase = useGameStore((state) => state.gamePhase);
   const itemsLeft = useGameStore((state) => state.itemsLeft);
+  const bagItemsCount = useGameStore((state) => state.bagItemsCount);
+  const bagCapacity = useGameStore((state) => state.bagCapacity);
   const { progress } = useProgress();
 
 
@@ -24,7 +26,10 @@ function App() {
       <div className='wrapper'>
         <div className='camera'></div>
 
-        <div className='indicator'>{itemsLeft} left</div>
+        <div className='indicator'>
+          <div>剩余: {itemsLeft}</div>
+          <div>托盘: {bagItemsCount}/{bagCapacity}</div>
+        </div>
         <div className='pause-button' onClick={pauseGame}><Pause/></div>
         <div className='count-down'><CountDown onComplete={lose} /></div>
         <Canvas

@@ -53,7 +53,7 @@ button:hover {
     align-items: center;
     height: 100%;
 
-    background-color: #525252;
+    background: radial-gradient(circle at top, #6b7280, #111827 65%);
 }
 
 #r3f-canvas {
@@ -72,8 +72,7 @@ button:hover {
     background-color: #111;
     border-radius: 50px;
     border: 2px solid #a3a3a3;
-    
-    /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); */
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
 }
 
 .overlay {
@@ -219,14 +218,25 @@ a {
     position: absolute;
     top: 40px;
     left: 40px;
-    width: 100px;
-    height: 50px;
+    min-width: 120px;
+    padding: 8px 10px;
     color: #f59e0b;
-    font-size: x-large;
-    font-weight: bold;
+    font-size: 16px;
+    font-weight: 600;
     z-index: 10;
     user-select: none;
+    background: rgba(17, 17, 17, 0.6);
+    border-radius: 12px;
+    display: grid;
+    gap: 6px;
    
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #525252;
+    text-align: center;
+    line-height: 1.4;
 }
 
 .footer-text {

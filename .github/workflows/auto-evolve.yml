@@ -1,0 +1,129 @@
+name: auto-evolve
+
+on:
+  workflow_dispatch:
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    env:
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix goose-catch-main ci
+
+      - name: Install Playwright
+        run: |
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "Playwright install failed (attempt $attempt). Retrying..."
+            sleep $((attempt * 5))
+          done
+          exit 1
+
+      - name: Build
+        run: npm run build
+
+      - name: Start preview server
+        run: |
+          mkdir -p artifacts
+          npm run preview -- --host 0.0.0.0 --port 4173 > artifacts/preview.log 2>&1 &
+          echo $! > artifacts/preview.pid
+
+      - name: Wait for preview
+        run: node scripts/wait-for-ready.mjs --url http://127.0.0.1:4173 --timeout-ms 30000
+
+      - name: Baseline eval (median of 3)
+        run: |
+          node scripts/eval_repeat.mjs \
+            --url http://127.0.0.1:4173 \
+            --runs 3 \
+            --dist-dir goose-catch-main/dist \
+            --screenshot-dir artifacts/screenshots \
+            --output artifacts/baseline.json \
+            --log artifacts/baseline.log
+
+      - name: Fetch patch
+        if: env.LLM_ENDPOINT != ''
+        run: |
+          node scripts/fetch_patch.mjs \
+            --endpoint "$LLM_ENDPOINT" \
+            --prompt-file .github/prompts/auto-evolve.md \
+            --output artifacts/patch.diff
+
+      - name: Guardrails
+        if: env.LLM_ENDPOINT != ''
+        run: node scripts/guardrails.mjs artifacts/patch.diff
+
+      - name: Apply patch
+        if: env.LLM_ENDPOINT != ''
+        run: |
+          git apply artifacts/patch.diff
+          npm run build
+
+      - name: Restart preview server
+        if: env.LLM_ENDPOINT != ''
+        run: |
+          if [ -f artifacts/preview.pid ]; then
+            kill "$(cat artifacts/preview.pid)" || true
+          fi
+          npm run preview -- --host 0.0.0.0 --port 4173 > artifacts/preview.log 2>&1 &
+          echo $! > artifacts/preview.pid
+          node scripts/wait-for-ready.mjs --url http://127.0.0.1:4173 --timeout-ms 30000
+
+      - name: Candidate eval (median of 3)
+        if: env.LLM_ENDPOINT != ''
+        run: |
+          node scripts/eval_repeat.mjs \
+            --url http://127.0.0.1:4173 \
+            --runs 3 \
+            --dist-dir goose-catch-main/dist \
+            --screenshot-dir artifacts/screenshots \
+            --output artifacts/candidate.json \
+            --log artifacts/candidate.log
+
+      - name: Score
+        if: env.LLM_ENDPOINT != ''
+        id: score
+        run: |
+          node scripts/score.mjs artifacts/baseline.json artifacts/candidate.json --output artifacts/score.json || true
+          node -e "const fs=require('fs');const data=JSON.parse(fs.readFileSync('artifacts/score.json','utf8'));fs.appendFileSync(process.env.GITHUB_OUTPUT, `improved=${data.improved}\n`);fs.appendFileSync(process.env.GITHUB_OUTPUT, `baselineScore=${data.baselineScore}\n`);fs.appendFileSync(process.env.GITHUB_OUTPUT, `candidateScore=${data.candidateScore}\n`);"
+
+      - name: Create pull request
+        if: steps.score.outputs.improved == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: auto/evolve
+          title: "chore: auto evolve"
+          body: |
+            Automated patch from LLM endpoint.
+
+            Score summary:
+            - Baseline score: ${{ steps.score.outputs.baselineScore }}
+            - Candidate score: ${{ steps.score.outputs.candidateScore }}
+          commit-message: "chore: auto evolve"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-evolve-artifacts
+          path: artifacts
