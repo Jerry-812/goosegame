@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "芭比消除",
+  "usingComponents": {
+    "doll": "/components/doll/doll"
+  }
+}
+

@@ -1,0 +1,56 @@
+
+import { Play, RotateCcw } from "lucide-react";
+import { useGameStore } from "../stores/useGameStore";
+
+const UI = () => {
+
+    const gamePhase = useGameStore((state) => state.gamePhase);
+    const gameStore = useGameStore();
+    const handleStart = () => gameStore.start();
+    const handleStartOver = () => {
+        gameStore.end();
+        setTimeout(() => {
+            gameStore.start();
+        }, 50);
+    };
+
+    const handleResume = () => gameStore.resume();
+    return (
+        <>
+            {(gamePhase !== 'playing') && (
+                <div className='ui-container'>
+                    <div className="menu">
+                        <div className="title">抓大鹅 - R3F</div>
+                        <div className="subtitle">
+                            点击物品收集到托盘，凑齐三个相同即可消除。
+                        </div>
+                        {gamePhase === 'ready' && (
+                            <button onClick={handleStart}><Play size={20}/>开始</button>
+                        )}
+                        {(gamePhase === 'paused') && (
+                            <>
+                                
+                                <button onClick={handleResume}><Play size={20}/>继续</button>
+                                <button onClick={handleStartOver}><RotateCcw size={20}/>重来</button>
+                            </>
+                        )}
+                        {(gamePhase === 'win' || gamePhase === 'gameover') && (
+                            <>
+                                {gamePhase === 'win' ?
+                                    <div className="win-title">你赢了！</div> :
+                                    <div className="loss-title">游戏结束！可惜可惜</div>}
+                                <button onClick={handleStartOver}><RotateCcw size={20}/>再来</button>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+            )}
+
+
+        </>
+
+    )
+}
+
+export default UI;
