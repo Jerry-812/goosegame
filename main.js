@@ -191,6 +191,23 @@ const TOOL_LABELS = {
 
 const BONUS_TOOL_POOL = ['remove', 'remove', 'match', 'hint', 'undo', 'freeze', 'shuffle']
 
+const QUALITY_CONFIG = {
+  fpsTarget: 60,
+  frameP95Target: 22,
+  longFrameThreshold: 50,
+  inputLatencyTarget: 90,
+  mergeTargetPerMin: 12,
+  hintTargetPerMin: 1,
+  frameSampleSize: 240,
+  inputSampleSize: 60,
+  weights: {
+    performance: 0.35,
+    stability: 0.2,
+    responsiveness: 0.2,
+    gameplay: 0.25,
+  },
+}
+
 const COLLISION_SPECS = {
   kitchen_kettle: { kind: 'sphere', r: 0.36 },
   kitchen_pan: { kind: 'box', w: 0.98, h: 0.5 },
@@ -255,6 +272,22 @@ const environmentCache = {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
+}
+
+function average(values) {
+  if (!values.length) return 0
+  return values.reduce((sum, v) => sum + v, 0) / values.length
+}
+
+function percentile(values, pct) {
+  if (!values.length) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * pct)))
+  return sorted[idx]
+}
+
+function formatPercent(value) {
+  return `${Math.round(value)}%`
 }
 
 function hashString(str) {
@@ -631,6 +664,8 @@ function enableDebugHooks() {
       three,
       physics,
       input,
+      quality,
+      getQualitySnapshot,
       resetGame,
       pickDoll,
       useToolHint,
@@ -830,6 +865,15 @@ const ui = {
   comboChip: qs('#comboChip'),
   comboValue: qs('#comboValue'),
   comboBar: qs('#comboBar'),
+
+  qualityPanel: qs('#qualityPanel'),
+  qualityScore: qs('#qualityScore'),
+  qualityGrade: qs('#qualityGrade'),
+  qualityPerf: qs('#qualityPerf'),
+  qualityStability: qs('#qualityStability'),
+  qualityResponsiveness: qs('#qualityResponsiveness'),
+  qualityGameplay: qs('#qualityGameplay'),
+  qualityNotes: qs('#qualityNotes'),
 }
 
 const state = {
@@ -871,6 +915,34 @@ const state = {
   bonusAt: BONUS_STEP,
   reloadAfterGame: false,
   tools: { ...TOOL_DEFAULTS },
+}
+
+const quality = {
+  enabled: true,
+  debugVisible: false,
+  startedAt: 0,
+  playTimeMs: 0,
+  frameTimes: [],
+  fpsSamples: [],
+  inputLatencies: [],
+  totalFrames: 0,
+  longFrames: 0,
+  errors: 0,
+  clicks: 0,
+  blockedClicks: 0,
+  trayFullEvents: 0,
+  merges: 0,
+  maxCombo: 0,
+  toolUses: {
+    remove: 0,
+    match: 0,
+    hint: 0,
+    undo: 0,
+    freeze: 0,
+    shuffle: 0,
+  },
+  pendingInputAt: 0,
+  lastFrameAt: 0,
 }
 
 const three = {
@@ -949,6 +1021,140 @@ function pauseGame(message = '') {
   clearHint()
   setFreezeUI(false)
   if (message) toast(message)
+  updateQualityUI()
+}
+
+function isDebugMode() {
+  try {
+    const url = new URL(window.location.href)
+    return url.searchParams.get('debug') === '1'
+  } catch {
+    return false
+  }
+}
+
+function resetQualityMetrics() {
+  quality.startedAt = performance.now()
+  quality.playTimeMs = 0
+  quality.frameTimes = []
+  quality.fpsSamples = []
+  quality.inputLatencies = []
+  quality.totalFrames = 0
+  quality.longFrames = 0
+  quality.errors = 0
+  quality.clicks = 0
+  quality.blockedClicks = 0
+  quality.trayFullEvents = 0
+  quality.merges = 0
+  quality.maxCombo = 0
+  quality.pendingInputAt = 0
+  quality.lastFrameAt = 0
+  for (const key of Object.keys(quality.toolUses)) {
+    quality.toolUses[key] = 0
+  }
+}
+
+function recordSample(list, value, limit) {
+  list.push(value)
+  if (list.length > limit) list.shift()
+}
+
+function recordQualityFrame(deltaMs) {
+  if (!quality.enabled || !Number.isFinite(deltaMs)) return
+  quality.totalFrames += 1
+  recordSample(quality.frameTimes, deltaMs, QUALITY_CONFIG.frameSampleSize)
+  recordSample(quality.fpsSamples, deltaMs > 0 ? 1000 / deltaMs : 0, QUALITY_CONFIG.frameSampleSize)
+  if (deltaMs >= QUALITY_CONFIG.longFrameThreshold) quality.longFrames += 1
+  if (state.running) quality.playTimeMs += deltaMs
+}
+
+function recordInputResponse() {
+  if (!quality.enabled || !quality.pendingInputAt) return
+  const start = quality.pendingInputAt
+  quality.pendingInputAt = 0
+  requestAnimationFrame(() => {
+    const latency = performance.now() - start
+    recordSample(quality.inputLatencies, latency, QUALITY_CONFIG.inputSampleSize)
+  })
+}
+
+function scoreToGrade(score) {
+  if (score >= 90) return 'S'
+  if (score >= 80) return 'A'
+  if (score >= 70) return 'B'
+  if (score >= 60) return 'C'
+  if (score >= 50) return 'D'
+  return 'E'
+}
+
+function getQualitySnapshot() {
+  const minutes = Math.max(quality.playTimeMs / 60000, 1 / 60)
+  const avgFps = average(quality.fpsSamples)
+  const frameP95 = percentile(quality.frameTimes, 0.95)
+  const longFrameRatio = quality.totalFrames ? quality.longFrames / quality.totalFrames : 0
+  const latencyP50 = quality.inputLatencies.length ? percentile(quality.inputLatencies, 0.5) : 0
+  const mergeRate = quality.merges / minutes
+  const hintRate = quality.toolUses.hint / minutes
+  const blockedRate = quality.clicks ? quality.blockedClicks / quality.clicks : 0
+
+  const fpsScore = clamp((avgFps / QUALITY_CONFIG.fpsTarget) * 100, 0, 100)
+  const frameScore = clamp(100 - Math.max(0, frameP95 - QUALITY_CONFIG.frameP95Target) * 2.5, 0, 100)
+  const performanceScore = fpsScore * 0.6 + frameScore * 0.4
+
+  const longPenalty = longFrameRatio * 100 * 0.6
+  const stabilityScore = clamp(100 - quality.errors * 15 - longPenalty, 0, 100)
+
+  const responsivenessScore = quality.inputLatencies.length
+    ? clamp(100 - Math.max(0, latencyP50 - QUALITY_CONFIG.inputLatencyTarget) * 0.8, 0, 100)
+    : 100
+
+  const mergeScore = clamp((mergeRate / QUALITY_CONFIG.mergeTargetPerMin) * 100, 0, 100)
+  const blockedScore = clamp(100 - blockedRate * 120, 0, 100)
+  const hintScore = clamp(100 - Math.max(0, hintRate - QUALITY_CONFIG.hintTargetPerMin) * 15, 0, 100)
+  const gameplayScore = mergeScore * 0.45 + blockedScore * 0.35 + hintScore * 0.2
+
+  const weights = QUALITY_CONFIG.weights
+  const totalScore =
+    performanceScore * weights.performance +
+    stabilityScore * weights.stability +
+    responsivenessScore * weights.responsiveness +
+    gameplayScore * weights.gameplay
+
+  return {
+    score: Math.round(totalScore),
+    grade: scoreToGrade(totalScore),
+    performanceScore,
+    stabilityScore,
+    responsivenessScore,
+    gameplayScore,
+    avgFps,
+    frameP95,
+    longFrameRatio,
+    latencyP50,
+    mergeRate,
+    hintRate,
+    blockedRate,
+    errors: quality.errors,
+  }
+}
+
+function updateQualityUI() {
+  if (!quality.debugVisible) return
+  const snapshot = getQualitySnapshot()
+  ui.qualityScore.textContent = String(snapshot.score)
+  ui.qualityGrade.textContent = snapshot.grade
+  ui.qualityPerf.textContent = `${Math.round(snapshot.performanceScore)} / 100`
+  ui.qualityStability.textContent = `${Math.round(snapshot.stabilityScore)} / 100`
+  ui.qualityResponsiveness.textContent = `${Math.round(snapshot.responsivenessScore)} / 100`
+  ui.qualityGameplay.textContent = `${Math.round(snapshot.gameplayScore)} / 100`
+  ui.qualityNotes.textContent = [
+    `平均 FPS ${snapshot.avgFps.toFixed(1)} · P95 帧时间 ${snapshot.frameP95.toFixed(1)}ms · 长帧占比 ${formatPercent(
+      snapshot.longFrameRatio * 100
+    )}`,
+    `输入延迟 P50 ${snapshot.latencyP50 ? `${snapshot.latencyP50.toFixed(0)}ms` : '--'}`,
+    `合并速率 ${snapshot.mergeRate.toFixed(1)} 次/分钟 · 阻挡点击率 ${formatPercent(snapshot.blockedRate * 100)}`,
+    `提示使用 ${snapshot.hintRate.toFixed(1)} 次/分钟 · 运行错误 ${snapshot.errors}`,
+  ].join('\n')
 }
 
 function initThree() {
@@ -1393,6 +1599,9 @@ function animateThree() {
   if (!three.ready) return
   const tick = () => {
     if (!physics.ready) initPhysics()
+    const now = performance.now()
+    if (three.lastTime) recordQualityFrame(now - three.lastTime)
+    three.lastTime = now
     updateMeshes()
     three.composer.render()
     requestAnimationFrame(tick)
@@ -2757,6 +2966,9 @@ function consumeTool(key) {
   if (state.tools[key] <= 0) return false
   state.tools[key] -= 1
   setToolUI()
+  if (quality.enabled && quality.toolUses[key] !== undefined) {
+    quality.toolUses[key] += 1
+  }
   return true
 }
 
@@ -2940,8 +3152,10 @@ async function pickDoll(dollId) {
   const idx = state.dolls.findIndex((d) => d.id === dollId)
   if (idx < 0) return
   const doll = state.dolls[idx]
+  recordInputResponse()
 
   if (isDollBlocked(doll)) {
+    if (quality.enabled) quality.blockedClicks += 1
     toast('物品被遮挡，先移开上层')
     return
   }
@@ -2949,6 +3163,7 @@ async function pickDoll(dollId) {
   if (!canPlaceIntoTray(doll.type)) {
     const rescued = tryAutoRescueTray(doll.type)
     if (!rescued) {
+      if (quality.enabled) quality.trayFullEvents += 1
       state.sound.lose()
       endGame('栏已满', '待合成栏放不下新的物品了')
       return
@@ -2991,6 +3206,10 @@ async function pickDoll(dollId) {
     const base = getScoreForType(merge.type)
     const mult = 1 + Math.min(0.6, (state.mergeCombo - 1) * 0.15)
     const add = Math.round(base * mult)
+    if (quality.enabled) {
+      quality.merges += 1
+      quality.maxCombo = Math.max(quality.maxCombo, state.mergeCombo)
+    }
     state.score += add
     setScoreUI(state.score)
     showFloatScore(`+${add}${state.mergeCombo >= 2 ? ` 连消×${state.mergeCombo}` : ''}`)
@@ -3036,6 +3255,7 @@ function resetGame(seed, modeKey) {
     window.location.reload()
     return
   }
+  resetQualityMetrics()
   state.seed = seed >>> 0
   state.rng = mulberry32(state.seed)
   setUrlConfig({ modeKey, seed: state.seed })
@@ -3263,6 +3483,10 @@ function bindEvents() {
     if (input.dragDistance > 6) return
     const hit = raycastPointer(e)
     if (!hit) return
+    if (quality.enabled) {
+      quality.clicks += 1
+      quality.pendingInputAt = performance.now()
+    }
     pickDoll(hit.doll.id)
   })
   ui.board.addEventListener('pointerup', () => {
@@ -3379,6 +3603,15 @@ async function boot() {
   const soundOn = localStorage.getItem(STORAGE.sound) !== '0'
   state.sound = new Sound(soundOn)
   setSoundUI()
+
+  quality.debugVisible = isDebugMode()
+  ui.qualityPanel.hidden = !quality.debugVisible
+  window.addEventListener('error', () => {
+    if (quality.enabled) quality.errors += 1
+  })
+  window.addEventListener('unhandledrejection', () => {
+    if (quality.enabled) quality.errors += 1
+  })
 
   const urlCfg = parseUrlConfig()
   state.seed = urlCfg.seed || makeSeed()
