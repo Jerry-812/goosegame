@@ -98,6 +98,13 @@ iOS 体验建议：
 - 仓库中保留了微信小程序原型文件（`pages/`、`components/`、`app.json` 等），网页与 `.app` 不依赖它们。
 - 参考项目源码在：`goose-catch-main/`
 
+## Auto-evolve CI（可选）
+
+GitHub Actions 工作流 `auto-evolve` 需要一个 LLM HTTP endpoint，返回统一 diff patch：
+
+1. 在服务器上运行 `scripts/llm-endpoint.mjs`（或替换为自定义实现）。
+2. 在 GitHub 仓库的 Settings → Secrets and variables → Actions 中新增 `LLM_ENDPOINT`，值为 `https://your-endpoint.example.com/patch`。
+3. 触发 `auto-evolve` workflow，CI 会请求 patch、执行 guardrails、评估性能并在改进时创建 PR。
 ## 自动优化流水线（自动评测 → 生成补丁 → 评估 → PR → 可自动合并）
 
 已新增自动化闭环脚本与 GitHub Actions：

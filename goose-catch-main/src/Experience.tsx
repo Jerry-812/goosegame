@@ -12,6 +12,29 @@ const Experience = () => {
     const attractorStrength = 0.1
 
 
+    return <>
+
+
+        <Physics debug={false} gravity={[0, 0, 0]} timeStep="vary" paused={gamePhase !== 'playing'} >
+            <RigidBody type="fixed" colliders="cuboid">
+                <Container />
+                <Attractor position={[0, 0, 0]} strength={attractorStrength} range={20}
+                />
+            </RigidBody>
+
+
+            <Items />
+            <Bag />
+
+
+            <ambientLight intensity={0.6} />
+            <hemisphereLight intensity={0.45} groundColor="#bdbdbd" color="#ffffff" />
+            <directionalLight position={[-5, 10, 2]} intensity={1.1} />
+
+            <color args={['#d7d7d7']} attach="background" />
+        </Physics>
+
+    </>
     return (
         <>
             <Background />

@@ -21,6 +21,9 @@ const UI = () => {
                 <div className='ui-container'>
                     <div className="menu">
                         <div className="title">抓大鹅 - R3F</div>
+                        <div className="subtitle">
+                            点击物品收集到托盘，凑齐三个相同即可消除。
+                        </div>
                         {gamePhase === 'ready' && (
                             <button onClick={handleStart}><Play size={20}/>开始</button>
                         )}

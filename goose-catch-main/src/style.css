@@ -56,6 +56,7 @@ button:hover {
     background: radial-gradient(1200px 900px at 20% 0%, #ffd8c7 0%, #f1c6da 35%, #b0c3ff 100%);
 }
 
+    background: radial-gradient(circle at top, #6b7280, #111827 65%);
 .app::before {
     content: '';
     position: absolute;
@@ -81,6 +82,8 @@ button:hover {
     padding: 10px;
     background: linear-gradient(165deg, #f6f8fb 0%, #d7dfe6 100%);
     border-radius: 50px;
+    border: 2px solid #a3a3a3;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
     border: 2px solid rgba(255, 255, 255, 0.75);
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
     
@@ -232,14 +235,25 @@ a {
     position: absolute;
     top: 40px;
     left: 40px;
-    width: 100px;
-    height: 50px;
+    min-width: 120px;
+    padding: 8px 10px;
     color: #f59e0b;
-    font-size: x-large;
-    font-weight: bold;
+    font-size: 16px;
+    font-weight: 600;
     z-index: 10;
     user-select: none;
+    background: rgba(17, 17, 17, 0.6);
+    border-radius: 12px;
+    display: grid;
+    gap: 6px;
    
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #525252;
+    text-align: center;
+    line-height: 1.4;
 }
 
 .footer-text {
