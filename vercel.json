@@ -1,5 +1,6 @@
 {
+  "buildCommand": "npm --prefix goose-catch-main install && npm --prefix goose-catch-main run build",
+  "outputDirectory": "goose-catch-main/dist",
   "cleanUrls": true,
   "trailingSlash": false
 }
-

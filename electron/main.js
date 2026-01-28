@@ -5,6 +5,8 @@ const { app, BrowserWindow, shell } = require('electron');
 
 const isDev = !app.isPackaged;
 const rootDir = path.join(__dirname, '..');
+const coreDistDir = path.join(rootDir, 'goose-catch-main', 'dist');
+const staticRootDir = fs.existsSync(path.join(coreDistDir, 'index.html')) ? coreDistDir : rootDir;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -60,8 +62,8 @@ function startStaticServer() {
   return new Promise((resolve, reject) => {
     staticServer = http.createServer((req, res) => {
       const safePath = toSafePath(req.url || '/');
-      const filePath = path.join(rootDir, safePath);
-      if (!filePath.startsWith(rootDir)) {
+      const filePath = path.join(staticRootDir, safePath);
+      if (!filePath.startsWith(staticRootDir)) {
         res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
         res.end('Forbidden');
         return;
@@ -75,7 +77,7 @@ function startStaticServer() {
 
         const ext = path.extname(filePath);
         if (!ext) {
-          sendFile(res, path.join(rootDir, 'index.html'));
+          sendFile(res, path.join(staticRootDir, 'index.html'));
           return;
         }
 
@@ -141,7 +143,7 @@ async function createWindow() {
     await win.loadURL(`http://127.0.0.1:${port}/index.html`);
   } catch (err) {
     // Fall back to file:// if the local server fails for any reason.
-    const indexPath = path.join(rootDir, 'index.html');
+    const indexPath = path.join(staticRootDir, 'index.html');
     await win.loadFile(indexPath);
   }
 }

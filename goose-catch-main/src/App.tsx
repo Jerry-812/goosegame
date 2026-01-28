@@ -12,6 +12,7 @@ import CountDown from './components/CountDown'
 function App() {
 
   const pauseGame = useGameStore((state) => state.paused);
+  const lose = useGameStore((state) => state.lose);
   // const gamePhase = useGameStore((state) => state.gamePhase);
   const itemsLeft = useGameStore((state) => state.itemsLeft);
   const { progress } = useProgress();
@@ -25,7 +26,7 @@ function App() {
 
         <div className='indicator'>{itemsLeft} left</div>
         <div className='pause-button' onClick={pauseGame}><Pause/></div>
-        <div className='count-down'><CountDown /></div>
+        <div className='count-down'><CountDown onComplete={lose} /></div>
         <Canvas
           id='r3f-canvas'
           camera={{ position: [0, 15, 4], fov: 50 }}

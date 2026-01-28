@@ -22,9 +22,13 @@ const HINT_DURATION = 2400
 const FREEZE_DURATION = 6000
 const BONUS_STEP = 120
 
-const PHYSICS_IDLE_STEP_MS = 420
-const PHYSICS_IDLE_STEPS = 2
-const PHYSICS_IDLE_ATTRACTOR = 0.36
+const PHYSICS_IDLE_STEP_MS = 380
+const PHYSICS_IDLE_STEPS = 3
+const PHYSICS_IDLE_ATTRACTOR = 0.58
+
+const CLUSTER_MIN_RADIUS_FACTOR = 0.18
+const CLUSTER_MAX_RADIUS_FACTOR = 0.68
+const CLUSTER_POWER = 0.92
 
 const TOOL_DEFAULTS = { remove: 2, match: 2, hint: 3, undo: 2, freeze: 2, shuffle: 1 }
 const MODE_TOOL_OVERRIDES = {
@@ -1954,8 +1958,8 @@ function applyAttractorForces(centerZ, radius, intensity = 1) {
   if (!physics.ready) return
   const strength = clamp(intensity, 0, 2)
   if (strength <= 0.001) return
-  const maxR = Math.max(60, radius * 0.94)
-  const basePull = Math.max(170, radius * 1.6) * strength
+  const maxR = Math.max(50, radius * 0.86)
+  const basePull = Math.max(180, radius * 1.85) * strength
   const pullScale = basePull / maxR
 
   for (const doll of state.dolls) {
@@ -2508,25 +2512,24 @@ function updateSpawnRadius() {
   state.containerRadius = radius
   const remaining = getRemainingCount()
   const ratio = state.totalItems ? remaining / state.totalItems : 1
-  // Keep items more clustered like the reference pile while still expanding
+  // Keep items tightly clustered like the reference pile while still expanding
   // slightly when many items remain.
-  const minFactor = 0.22
-  const curve = Math.pow(clamp(ratio, 0, 1), 0.88)
-  const factor = minFactor + (1 - minFactor) * curve * 0.94
+  const curve = Math.pow(clamp(ratio, 0, 1), CLUSTER_POWER)
+  const factor = CLUSTER_MIN_RADIUS_FACTOR + (CLUSTER_MAX_RADIUS_FACTOR - CLUSTER_MIN_RADIUS_FACTOR) * curve
   state.spawnRadius = radius * factor
 }
 
 function placeDollInRadius(doll, width, height, radius, existing, rng) {
   const { centerX, centerY } = getBowlMetrics(width, height)
-  const margin = Math.max(6, (doll.physRadius || 0) * 0.6)
+  const margin = Math.max(3, (doll.physRadius || 0) * 0.38)
   const minX = margin
   const maxX = Math.max(minX, width - doll.w - margin)
   const minY = margin
   const maxY = Math.max(minY, height - doll.h - margin)
-  const safeRadius = Math.max(20, radius - (doll.physRadius || 0) - margin)
+  const safeRadius = Math.max(18, radius - (doll.physRadius || 0) - margin)
   let best = null
   let tries = 0
-  while (tries < 48) {
+  while (tries < 72) {
     const angle = rng() * Math.PI * 2
     const r = Math.sqrt(rng()) * safeRadius
     const rawX = centerX + Math.cos(angle) * r - doll.w / 2
@@ -2544,7 +2547,7 @@ function placeDollInRadius(doll, width, height, radius, existing, rng) {
     for (const other of existing) {
       const ox = other.x + other.w / 2
       const oy = other.y + other.h / 2
-      const minDist = (doll.physRadius + (other.physRadius || other.radius || 0)) * 1.3
+      const minDist = (doll.physRadius + (other.physRadius || other.radius || 0)) * 1.08
       if (Math.hypot(cx - ox, cy - oy) < minDist) {
         ok = false
         break

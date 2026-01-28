@@ -1,6 +1,8 @@
 # Goose Catch Deluxe（抓大鹅风格）
 
-本项目现在的**推荐运行方式是直接打开打包好的 macOS `.app`**。
+本项目现在的**核心运行逻辑来自 `goose-catch-main/src`（React + R3F + Rapier）**，外层只是 Electron/部署的包装。
+
+推荐体验方式：直接打开打包好的 macOS `.app`。
 
 参考目标效果（视觉与手感对齐 goose-catch-main / 官方展示）：
 
@@ -23,21 +25,38 @@
 说明：
 
 - `.app` 的入口就是当前根目录的 `index.html + main.js + styles.css`。
-- 每次你改完样式或逻辑，只要重新执行一次 `npm run electron:dist`，再打开 `.app` 就是最新版本。
+- 目前 `.app` 会优先加载 `goose-catch-main/dist`（即核心 React 版本的构建产物）。
+- 每次改完 `goose-catch-main/src`，只要重新执行一次 `npm run electron:dist`，再打开 `.app` 就是最新版本。
 
 ## 2. 浏览器本地运行（开发调试）
 
 如果你要快速调试画面和交互：
 
-1. 启动静态服务
-- `python3 -m http.server 4173`
+核心开发建议直接启动 `goose-catch-main`：
 
-2. 浏览器打开
-- `http://127.0.0.1:4173/index.html?mode=easy&seed=2026`
+1. 启动核心开发服务器
+- `npm run dev`
 
-可选（开启调试钩子）：
+2. 浏览器打开（Vite 会显示本地地址）
 
-- `http://127.0.0.1:4173/index.html?debug=1&mode=easy&seed=2026`
+
+## 3. 生成“可在 mac / iOS 直接打开的链接”（强烈推荐 Vercel）
+
+目标：拿到一个 HTTPS 链接，mac 和 iOS 都能直接点开玩（并可“添加到主屏幕”）。
+
+方式 A：Vercel（最省事，推荐）
+
+1. 把仓库推到 GitHub（当前目录就是静态站点根目录）
+2. 打开 Vercel 并导入该仓库
+3. Framework 选择 `Other` / `Static`
+4. Build Command / Output Directory 已配置为 `goose-catch-main/dist`（见 `vercel.json`）
+5. 部署完成后，你会得到一个链接（mac / iOS 都可直接打开）
+
+iOS 体验建议：
+
+1. 用 Safari 打开部署链接
+2. 点击分享按钮 → “添加到主屏幕”
+3. 之后会以 App 形态启动（standalone）
 
 ## 当前对齐参考站点的关键点
 
@@ -50,14 +69,15 @@
 
 这些参数与画面风格已经直接写在：
 
-- 逻辑：`main.js`
-- 画面：`styles.css`
+- 核心逻辑：`goose-catch-main/src`
+- 画面样式：`goose-catch-main/src/style.css`
 
 ## 打包与脚本
 
 项目脚本（根目录 `package.json`）：
 
-- 语法检查：`npm run check`
+- 语法检查（旧版脚本）：`npm run check`
+- 核心开发：`npm run dev`（等价于 `goose-catch-main` 的 Vite）
 - Electron 打包（目录产物）：`npm run electron:dist`
 
 打包产物位置：
