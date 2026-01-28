@@ -5,3 +5,9 @@ Thumbs.db
 .vscode/
 node_modules/
 dist/
+baseline.json
+candidate.json
+agent.patch
+preview-*.log
+eval-*.log
+ollama-server.log

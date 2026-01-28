@@ -8,6 +8,8 @@ interface BagItem {
 
 }
 
+type SceneKey = 'market' | 'convenience' | 'hotpot';
+
 interface GameState {
     gamePhase: 'ready' | 'playing' | 'paused' | 'gameover' | 'win';
     time: number;
@@ -17,12 +19,15 @@ interface GameState {
     bagItemsCount: number;
     bagItems: BagItem[];
     slotPositions: THREE.Vector3[];
+    scene: SceneKey;
+    sceneList: SceneKey[];
     start: () => void;
     end: () => void;
     win: () => void;
     lose: () => void;
     paused: () => void;
     resume: () => void;
+    setScene: (scene: SceneKey) => void;
     // getNextPosition: () => THREE.Vector3 | null;
     addItemAndGetPosition: (item: BagItem) => THREE.Vector3 | null;
     checkAndRemoveItems: () => boolean;
@@ -36,6 +41,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     bagCapacity: 6,
     bagItemsCount: 0,
     bagItems: [],
+    scene: 'market',
+    sceneList: ['market', 'convenience', 'hotpot'],
     slotPositions: [
         new THREE.Vector3(-2.25, 0.2, 3),
         new THREE.Vector3(-1.35, 0.2, 3),
@@ -45,13 +52,18 @@ export const useGameStore = create<GameState>((set, get) => ({
         new THREE.Vector3(2.25, 0.2, 3),
     ],
 
-    start: () => set({
-        gamePhase: 'playing',
-        bagItemsCount: 0,
-        bagItems: [],
-        itemsLeft: get().totalItems
-
-    }),
+    setScene: (scene) => set({ scene }),
+    start: () => {
+        const { sceneList } = get();
+        const nextScene = sceneList[Math.floor(Math.random() * sceneList.length)];
+        set({
+            gamePhase: 'playing',
+            bagItemsCount: 0,
+            bagItems: [],
+            itemsLeft: get().totalItems,
+            scene: nextScene,
+        });
+    },
     paused: () => set({ gamePhase: 'paused' }),
     resume: () => set({ gamePhase: 'playing' }),
     end: () => set({ gamePhase: 'ready' }),

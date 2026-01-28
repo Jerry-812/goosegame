@@ -9,10 +9,10 @@
     "core:install": "npm --prefix goose-catch-main install",
     "core:dev": "npm --prefix goose-catch-main run dev",
     "core:build": "npm --prefix goose-catch-main run build",
-    "core:preview": "npm --prefix goose-catch-main run preview",
+    "core:preview": "npm --prefix goose-catch-main run preview --",
     "dev": "npm run core:dev",
     "build": "npm run core:build",
-    "preview": "npm run core:preview",
+    "preview": "npm run core:preview --",
     "electron:dev": "node electron/ensure-electron.js && env -u ELECTRON_RUN_AS_NODE electron .",
     "electron:pack": "npm run core:install && npm run core:build && electron-builder --dir",
     "electron:dist": "npm run core:install && npm run core:build && electron-builder --mac dir"
