@@ -1,0 +1,64 @@
+<view class="page">
+  <view class="header">
+    <view class="pill">
+      <text class="pill-label">得分</text>
+      <text class="pill-value">{{score}}</text>
+    </view>
+    <view class="pill {{timer <= 10 ? 'danger' : ''}}">
+      <text class="pill-label">时间</text>
+      <text class="pill-value">{{timer}}s</text>
+    </view>
+    <button class="btn" size="mini" bindtap="onRestart">重开</button>
+  </view>
+
+  <view class="game-area" id="gameArea">
+    <image class="pot-bg" src="/images/pot.png" mode="widthFix" />
+    <block wx:for="{{dolls}}" wx:key="id">
+      <doll
+        dollId="{{item.id}}"
+        type="{{item.type}}"
+        label="{{item.label}}"
+        image="{{item.image}}"
+        size="{{item.size}}"
+        x="{{item.x}}"
+        y="{{item.y}}"
+        z="{{item.z}}"
+        rotate="{{item.rotate}}"
+        visible="{{item.visible}}"
+        bind:dolltap="onDollTap"
+      />
+    </block>
+
+    <view class="merge-fx" wx:if="{{mergeFx}}"></view>
+  </view>
+
+  <view class="tray">
+    <view class="tray-title">
+      <text>待合成栏</text>
+      <text class="tray-sub">({{selected.length}}/{{maxTray}})</text>
+    </view>
+    <view class="tray-slots">
+      <block wx:for="{{traySlots}}" wx:key="*this">
+        <view class="tray-slot {{selected[index] ? 'filled' : ''}}">
+          <image
+            wx:if="{{selected[index]}}"
+            class="tray-item"
+            src="{{selected[index].image}}"
+            mode="aspectFit"
+          />
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="overlay" wx:if="{{result.visible}}">
+    <view class="dialog">
+      <view class="dialog-title">{{result.title}}</view>
+      <view class="dialog-sub">{{result.sub}}</view>
+      <view class="dialog-actions">
+        <button class="btn primary" bindtap="onRestart">再来一局</button>
+      </view>
+    </view>
+  </view>
+</view>
+

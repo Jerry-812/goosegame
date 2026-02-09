@@ -1,0 +1,226 @@
+{
+  "baseUrl": "http://127.0.0.1:4173",
+  "outDir": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke",
+  "results": [
+    {
+      "scene": "japanese",
+      "scene_label": "日式料理店",
+      "style": "realistic",
+      "style_label": "写实",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 3,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/japanese-realistic-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/japanese-realistic-post.png",
+      "error": null
+    },
+    {
+      "scene": "cyber",
+      "scene_label": "赛博超市",
+      "style": "realistic",
+      "style_label": "写实",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": true,
+      "root_len_after_start": 2039,
+      "canvas_after_start": 1,
+      "console_errors": {
+        "count": 0,
+        "samples": []
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/cyber-realistic-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/cyber-realistic-post.png",
+      "error": null
+    },
+    {
+      "scene": "arcade",
+      "scene_label": "复古街机厅",
+      "style": "realistic",
+      "style_label": "写实",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 5,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/arcade-realistic-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/arcade-realistic-post.png",
+      "error": null
+    },
+    {
+      "scene": "magic",
+      "scene_label": "魔法书屋",
+      "style": "realistic",
+      "style_label": "写实",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 3,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/magic-realistic-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/magic-realistic-post.png",
+      "error": null
+    },
+    {
+      "scene": "space",
+      "scene_label": "太空货仓",
+      "style": "realistic",
+      "style_label": "写实",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 9,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/space-realistic-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/space-realistic-post.png",
+      "error": null
+    },
+    {
+      "scene": "japanese",
+      "scene_label": "日式料理店",
+      "style": "toon",
+      "style_label": "卡通",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 11,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/japanese-toon-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/japanese-toon-post.png",
+      "error": null
+    },
+    {
+      "scene": "cyber",
+      "scene_label": "赛博超市",
+      "style": "toon",
+      "style_label": "卡通",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": true,
+      "root_len_after_start": 2039,
+      "canvas_after_start": 1,
+      "console_errors": {
+        "count": 0,
+        "samples": []
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/cyber-toon-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/cyber-toon-post.png",
+      "error": null
+    },
+    {
+      "scene": "arcade",
+      "scene_label": "复古街机厅",
+      "style": "toon",
+      "style_label": "卡通",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 3,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/arcade-toon-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/arcade-toon-post.png",
+      "error": null
+    },
+    {
+      "scene": "magic",
+      "scene_label": "魔法书屋",
+      "style": "toon",
+      "style_label": "卡通",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 3,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/magic-toon-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/magic-toon-post.png",
+      "error": null
+    },
+    {
+      "scene": "space",
+      "scene_label": "太空货仓",
+      "style": "toon",
+      "style_label": "卡通",
+      "style_pressed": true,
+      "scene_pressed": true,
+      "start_ok": false,
+      "root_len_after_start": 0,
+      "canvas_after_start": 0,
+      "console_errors": {
+        "count": 7,
+        "samples": [
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA",
+          "expected instance of _TA"
+        ]
+      },
+      "screenshot_pre": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/space-toon-pre.png",
+      "screenshot_post": "/Users/JerryXu/Desktop/zhuadae/debug-screenshots/scene-style-smoke/space-toon-post.png",
+      "error": null
+    }
+  ]
+}
