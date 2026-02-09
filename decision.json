@@ -1,0 +1,29 @@
+{
+  "improved": false,
+  "reasons": [
+    "load time regressed > 10%",
+    "score improvement < 1.0"
+  ],
+  "baselineScore": 2.713,
+  "candidateScore": 1.6241,
+  "baseline": {
+    "success": true,
+    "load_ms": 745,
+    "fps": 13.49,
+    "bundle_kb": 3428.51,
+    "console_errors": {
+      "count": 0,
+      "samples": []
+    }
+  },
+  "candidate": {
+    "success": true,
+    "load_ms": 2477,
+    "fps": 4.47,
+    "bundle_kb": 3428.27,
+    "console_errors": {
+      "count": 0,
+      "samples": []
+    }
+  }
+}

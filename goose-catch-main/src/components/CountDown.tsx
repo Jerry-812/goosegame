@@ -6,17 +6,22 @@ interface CountDownProps {
 }
 
 const CountDown = ({ onComplete }: CountDownProps) => {
-  const { time, gamePhase } = useGameStore();
+  const { time, gamePhase, freezeUntil } = useGameStore();
   const [timeLeft, setTimeLeft] = useState<number>(time);
   const prevPhaseRef = useRef<string>(gamePhase);
+  const completedRef = useRef(false);
 
 
   useEffect(() => {
-    if (gamePhase === 'playing' && prevPhaseRef.current === 'ready') {
+    const prevPhase = prevPhaseRef.current;
+    const startedFromReady =
+      gamePhase === 'playing' &&
+      (prevPhase === 'ready' || prevPhase === 'win' || prevPhase === 'gameover');
+    const resetPhase = gamePhase === 'ready' || gamePhase === 'win' || gamePhase === 'gameover';
+
+    if (startedFromReady || resetPhase) {
       setTimeLeft(time);
-    }
-    if (gamePhase === 'ready' && prevPhaseRef.current !== 'ready') {
-      setTimeLeft(time);
+      completedRef.current = false;
     }
     prevPhaseRef.current = gamePhase;
   }, [gamePhase, time]);
@@ -25,17 +30,24 @@ const CountDown = ({ onComplete }: CountDownProps) => {
   useEffect(() => {
     if (gamePhase !== 'playing') return;
 
-    if (timeLeft <= 0) {
-      onComplete?.();
-      return;
-    }
-
     const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
+      setTimeLeft((prev) => {
+        if (freezeUntil && Date.now() < freezeUntil) {
+          return prev;
+        }
+        if (prev <= 1) {
+          if (!completedRef.current) {
+            completedRef.current = true;
+            onComplete?.();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, gamePhase, onComplete]);
+  }, [gamePhase, freezeUntil, onComplete]);
 
   const minutes = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;

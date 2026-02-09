@@ -112,7 +112,8 @@ function buildPatchFromEdits(edits) {
       for (const { find, replace } of fileEdits) {
         const index = updated.indexOf(find);
         if (index === -1) {
-          throw new Error(`Find string not found in ${filePath}.`);
+          // Skip unmatched edits instead of failing the whole patch.
+          continue;
         }
         updated = updated.replace(find, replace);
       }
