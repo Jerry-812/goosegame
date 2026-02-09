@@ -108,11 +108,6 @@ type StackProfile = {
   zClamp: [number, number];
 };
 
-const loadGLTF = (url: string) => useGLTF(url) as GLTF;
-
-const ALL_ITEM_URLS = Object.values(ITEM_URLS).flat();
-ALL_ITEM_URLS.forEach((url) => useGLTF.preload(url));
-
 const WORLD_TARGET_SIZE = 0.9;
 const BAG_TARGET_SIZE = 0.55;
 
@@ -120,57 +115,57 @@ const STACK_PROFILE_BY_SCENE: Record<SceneKey, StackProfile> = {
   japanese: {
     centerX: 0,
     centerZ: -0.28,
-    baseY: 1.08,
-    radius: 1.45,
+    baseY: 1.06,
+    radius: 1.95,
     jitter: 0.05,
-    heightSpacing: 0.27,
-    layerCapacity: 56,
-    xClamp: 1.82,
-    zClamp: [-1.9, 1.0],
+    heightSpacing: 0.18,
+    layerCapacity: 44,
+    xClamp: 2.26,
+    zClamp: [-2.22, 1.34],
   },
   cyber: {
     centerX: 0,
     centerZ: -0.32,
-    baseY: 1.06,
-    radius: 1.42,
+    baseY: 1.04,
+    radius: 1.9,
     jitter: 0.05,
-    heightSpacing: 0.27,
-    layerCapacity: 56,
-    xClamp: 1.8,
-    zClamp: [-1.92, 0.96],
+    heightSpacing: 0.18,
+    layerCapacity: 44,
+    xClamp: 2.24,
+    zClamp: [-2.24, 1.32],
   },
   arcade: {
     centerX: 0,
     centerZ: -0.25,
-    baseY: 1.08,
-    radius: 1.48,
+    baseY: 1.06,
+    radius: 2.0,
     jitter: 0.055,
-    heightSpacing: 0.27,
-    layerCapacity: 58,
-    xClamp: 1.86,
-    zClamp: [-1.88, 1.02],
+    heightSpacing: 0.18,
+    layerCapacity: 46,
+    xClamp: 2.28,
+    zClamp: [-2.2, 1.38],
   },
   magic: {
     centerX: 0,
     centerZ: -0.3,
-    baseY: 1.05,
-    radius: 1.4,
+    baseY: 1.03,
+    radius: 1.92,
     jitter: 0.05,
-    heightSpacing: 0.27,
-    layerCapacity: 56,
-    xClamp: 1.8,
-    zClamp: [-1.92, 0.96],
+    heightSpacing: 0.18,
+    layerCapacity: 44,
+    xClamp: 2.24,
+    zClamp: [-2.24, 1.32],
   },
   space: {
     centerX: 0,
     centerZ: -0.28,
-    baseY: 1.05,
-    radius: 1.44,
+    baseY: 1.03,
+    radius: 1.95,
     jitter: 0.05,
-    heightSpacing: 0.27,
-    layerCapacity: 56,
-    xClamp: 1.84,
-    zClamp: [-1.92, 0.98],
+    heightSpacing: 0.18,
+    layerCapacity: 44,
+    xClamp: 2.24,
+    zClamp: [-2.24, 1.34],
   },
 };
 
@@ -191,66 +186,21 @@ const Items = () => {
   const registerItemsMeta = useGameStore((state) => state.registerItemsMeta);
   const scene = useGameStore((state) => state.scene);
 
-  const jpModels: GltfAsset[] = [
-    loadGLTF(jpBowlUrl),
-    loadGLTF(jpBowlSmallUrl),
-    loadGLTF(jpPlateUrl),
-    loadGLTF(jpPlateSmallUrl),
-    loadGLTF(jpPotAUrl),
-    loadGLTF(jpPotBUrl),
-    loadGLTF(jpDinnerUrl),
-  ];
+  const sceneKey = (scene in ITEM_URLS ? scene : 'japanese') as SceneKey;
+  const itemUrls = ITEM_URLS[sceneKey];
+  const models = useGLTF(itemUrls) as GltfAsset[];
+  const itemTypes = itemUrls.length;
 
-  const cyberModels: GltfAsset[] = [
-    loadGLTF(cyberSodaUrl),
-    loadGLTF(cyberChipsUrl),
-    loadGLTF(cyberChocolateUrl),
-    loadGLTF(cyberDoughnutUrl),
-    loadGLTF(cyberCandyUrl),
-    loadGLTF(cyberKetchupUrl),
-    loadGLTF(cyberOnionUrl),
-  ];
+  useEffect(() => {
+    Object.values(ITEM_URLS).forEach((urls) => {
+      urls.forEach((url) => useGLTF.preload(url));
+    });
+  }, []);
 
-  const arcadeModels: GltfAsset[] = [
-    loadGLTF(arcadeCoinAUrl),
-    loadGLTF(arcadeCoinBUrl),
-    loadGLTF(arcadeCoinCUrl),
-    loadGLTF(arcadeCanAUrl),
-    loadGLTF(arcadeCanBUrl),
-    loadGLTF(arcadeBoxAUrl),
-    loadGLTF(arcadeBoxBUrl),
-  ];
+  useEffect(() => {
+    itemUrls.forEach((url) => useGLTF.preload(url));
+  }, [itemUrls]);
 
-  const magicModels: GltfAsset[] = [
-    loadGLTF(magicBookStack1Url),
-    loadGLTF(magicBookStack2Url),
-    loadGLTF(magicPotion1Url),
-    loadGLTF(magicPotion2Url),
-    loadGLTF(magicCandleUrl),
-    loadGLTF(magicCauldronUrl),
-    loadGLTF(magicBookStandUrl),
-  ];
-
-  const spaceModels: GltfAsset[] = [
-    loadGLTF(spaceCrateUrl),
-    loadGLTF(spaceCrateLargeUrl),
-    loadGLTF(spaceCrateTarpUrl),
-    loadGLTF(spaceBarrelUrl),
-    loadGLTF(spaceBarrelClosedUrl),
-    loadGLTF(spaceChestUrl),
-    loadGLTF(spaceKeyCardUrl),
-  ];
-
-  const modelsByScene: Record<SceneKey, GltfAsset[]> = {
-    japanese: jpModels,
-    cyber: cyberModels,
-    arcade: arcadeModels,
-    magic: magicModels,
-    space: spaceModels,
-  };
-
-  const models = modelsByScene[scene as SceneKey];
-  const itemTypes = ITEM_URLS[scene as SceneKey].length;
   const modelScales = useMemo(
     () =>
       models.map((model) => ({
@@ -272,10 +222,10 @@ const Items = () => {
   }, [shuffleSeed]);
 
   const items = useMemo(() => {
-    const profile = STACK_PROFILE_BY_SCENE[scene as SceneKey] ?? STACK_PROFILE_BY_SCENE.japanese;
+    const profile = STACK_PROFILE_BY_SCENE[sceneKey] ?? STACK_PROFILE_BY_SCENE.japanese;
     const density = Math.min(1, Math.max(0, (totalItems - 280) / 350));
-    const layerCapacity = Math.max(46, Math.round(profile.layerCapacity + density * 12));
-    const radius = profile.radius + density * 0.14;
+    const layerCapacity = Math.max(38, Math.round(profile.layerCapacity + density * 8));
+    const radius = profile.radius + density * 0.16;
     const jitter = profile.jitter + density * 0.02;
     const heightSpacing = profile.heightSpacing + density * 0.01;
     const centerX = profile.centerX;
@@ -283,6 +233,7 @@ const Items = () => {
     const baseY = profile.baseY;
     const [zMin, zMax] = profile.zClamp;
     const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
     const rnd = seededRandom;
     const typePool = Array.from({ length: totalItems }, (_, i) => i % itemTypes);
 
@@ -293,10 +244,12 @@ const Items = () => {
 
     return Array.from({ length: totalItems }, (_, i) => {
       const stackLayer = Math.floor(i / layerCapacity);
-      const angle = rnd() * Math.PI * 2;
-      const r = Math.pow(rnd(), 1.08) * radius;
-      const x = clamp(centerX + Math.cos(angle) * r + (rnd() - 0.5) * jitter, -profile.xClamp, profile.xClamp);
-      const z = clamp(centerZ + Math.sin(angle) * r + (rnd() - 0.5) * jitter, zMin, zMax);
+      const withinLayer = i % layerCapacity;
+      const t = (withinLayer + 0.5) / layerCapacity;
+      const angle = withinLayer * GOLDEN_ANGLE + stackLayer * 0.42 + rnd() * 0.25;
+      const ringRadius = Math.sqrt(t) * (radius + stackLayer * 0.035);
+      const x = clamp(centerX + Math.cos(angle) * ringRadius + (rnd() - 0.5) * jitter, -profile.xClamp, profile.xClamp);
+      const z = clamp(centerZ + Math.sin(angle) * ringRadius + (rnd() - 0.5) * jitter, zMin, zMax);
       const y = baseY + stackLayer * heightSpacing + (rnd() - 0.5) * jitter;
       return {
         id: i,
@@ -305,7 +258,7 @@ const Items = () => {
         type: typePool[i],
       };
     });
-  }, [scene, totalItems, seededRandom, itemTypes]);
+  }, [sceneKey, totalItems, seededRandom, itemTypes]);
 
   useEffect(() => {
     registerItemsMeta(items.map((item) => ({ id: item.id, type: item.type })));

@@ -109,6 +109,8 @@ interface GameState {
     bagItems: BagItem[];
     pickedIds: number[];
     removedIds: number[];
+    pickedLookup: Record<number, true>;
+    removedLookup: Record<number, true>;
     bagTargets: Record<number, THREE.Vector3>;
     hintId: number | null;
     shuffleSeed: number;
@@ -154,6 +156,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     bagItems: [],
     pickedIds: [],
     removedIds: [],
+    pickedLookup: {},
+    removedLookup: {},
     bagTargets: {},
     hintId: null,
     shuffleSeed: 0,
@@ -205,6 +209,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             bagItems: [],
             pickedIds: [],
             removedIds: [],
+            pickedLookup: {},
+            removedLookup: {},
             bagTargets: {},
             hintId: null,
             freezeUntil: null,
@@ -242,6 +248,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             bagItems: [],
             pickedIds: [],
             removedIds: [],
+            pickedLookup: {},
+            removedLookup: {},
             bagTargets: {},
             hintId: null,
             shuffleSeed: Math.floor(Math.random() * 10000),
@@ -263,6 +271,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             bagItems: [],
             pickedIds: [],
             removedIds: [],
+            pickedLookup: {},
+            removedLookup: {},
             bagTargets: {},
             hintId: null,
             freezeUntil: null,
@@ -299,17 +309,22 @@ export const useGameStore = create<GameState>((set, get) => ({
         if (indicesToRemove.length > 0) {
             // 有需要移除的item，更新状态
             const idsToRemove = indicesToRemove.map((i) => bagItems[i].id);
+            const idsToRemoveSet = new Set(idsToRemove);
             indicesToRemove.forEach(
                 (i) => bagItems[i].meshRef.current && (bagItems[i].meshRef.current!.visible = false),
             );
 
             set((state) => {
                 const newBagItems = state.bagItems.filter((_, index) => !indicesToRemove.includes(index));
-                const newPickedIds = state.pickedIds.filter((id) => !idsToRemove.includes(id));
+                const newPickedIds = state.pickedIds.filter((id) => !idsToRemoveSet.has(id));
                 const newRemovedIds = [...state.removedIds, ...idsToRemove];
                 const newBagTargets = { ...state.bagTargets };
+                const newPickedLookup = { ...state.pickedLookup };
+                const newRemovedLookup = { ...state.removedLookup };
                 idsToRemove.forEach((id) => {
                     delete newBagTargets[id];
+                    delete newPickedLookup[id];
+                    newRemovedLookup[id] = true;
                 });
                 const nextItemsLeft = Math.max(0, state.itemsLeft - idsToRemove.length);
                 const nextPhase =
@@ -319,6 +334,8 @@ export const useGameStore = create<GameState>((set, get) => ({
                     bagItemsCount: newBagItems.length,
                     pickedIds: newPickedIds,
                     removedIds: newRemovedIds,
+                    pickedLookup: newPickedLookup,
+                    removedLookup: newRemovedLookup,
                     bagTargets: newBagTargets,
                     itemsLeft: nextItemsLeft,
                     gamePhase: nextPhase,
@@ -334,13 +351,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     //添加item并获取其位置
     pickItem: (item: BagItem) => {
         const { slotPositions, bagCapacity } = get();
-        const { bagItems } = get();
+        const { bagItems, pickedLookup, removedLookup } = get();
 
         if (bagItems.length >= bagCapacity) return null;
-        if (get().pickedIds.includes(item.id) || get().removedIds.includes(item.id)) return null;
+        if (pickedLookup[item.id] || removedLookup[item.id]) return null;
 
         const existingTypeIndex = bagItems.findIndex(i => i.type === item.type);
-        let newIndex = existingTypeIndex !== -1 ? existingTypeIndex + 1 : bagItems.length;
+        const newIndex = existingTypeIndex !== -1 ? existingTypeIndex + 1 : bagItems.length;
         const newPosition = slotPositions[newIndex] ?? slotPositions[slotPositions.length - 1];
 
         const newBagItems = [
@@ -353,6 +370,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             bagItems: newBagItems,
             bagItemsCount: newBagItems.length,
             pickedIds: [...get().pickedIds, item.id],
+            pickedLookup: { ...get().pickedLookup, [item.id]: true },
             bagTargets: {
                 ...get().bagTargets,
                 [item.id]: newPosition.clone(),
@@ -371,7 +389,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         set({ gooseCaptured: true, gamePhase: 'win' });
     },
     undoTool: () => {
-        const { bagItems, tools, totalItems } = get();
+        const { bagItems, tools } = get();
         if (tools.undo <= 0) {
             get().notify('撤回道具不足');
             return;
@@ -384,14 +402,16 @@ export const useGameStore = create<GameState>((set, get) => ({
         set((state) => {
             const newBagItems = state.bagItems.slice(0, -1);
             const newPickedIds = state.pickedIds.filter((id) => id !== last.id);
+            const newPickedLookup = { ...state.pickedLookup };
             const newBagTargets = { ...state.bagTargets };
+            delete newPickedLookup[last.id];
             delete newBagTargets[last.id];
             return {
                 bagItems: newBagItems,
                 bagItemsCount: newBagItems.length,
                 pickedIds: newPickedIds,
+                pickedLookup: newPickedLookup,
                 bagTargets: newBagTargets,
-                itemsLeft: Math.min(totalItems, state.itemsLeft + 1),
                 tools: { ...state.tools, undo: Math.max(0, state.tools.undo - 1) },
             };
         });
@@ -410,15 +430,23 @@ export const useGameStore = create<GameState>((set, get) => ({
         const last = bagItems[bagItems.length - 1];
         set((state) => {
             const newBagItems = state.bagItems.slice(0, -1);
+            const newPickedIds = state.pickedIds.filter((id) => id !== last.id);
             const newBagTargets = { ...state.bagTargets };
+            const newPickedLookup = { ...state.pickedLookup };
+            const newRemovedLookup = { ...state.removedLookup };
             delete newBagTargets[last.id];
+            delete newPickedLookup[last.id];
+            newRemovedLookup[last.id] = true;
             const nextItemsLeft = Math.max(0, state.itemsLeft - 1);
             const nextPhase =
                 nextItemsLeft === 0 && newBagItems.length === 0 ? 'catch' : state.gamePhase;
             return {
                 bagItems: newBagItems,
                 bagItemsCount: newBagItems.length,
+                pickedIds: newPickedIds,
                 removedIds: [...state.removedIds, last.id],
+                pickedLookup: newPickedLookup,
+                removedLookup: newRemovedLookup,
                 bagTargets: newBagTargets,
                 itemsLeft: nextItemsLeft,
                 gamePhase: nextPhase,
@@ -429,13 +457,13 @@ export const useGameStore = create<GameState>((set, get) => ({
         get().notify('已移出一个物品');
     },
     hintTool: () => {
-        const { tools, itemsMeta, pickedIds, removedIds } = get();
+        const { tools, itemsMeta, pickedLookup, removedLookup } = get();
         if (tools.hint <= 0) {
             get().notify('提示道具不足');
             return;
         }
         const available = itemsMeta.filter(
-            (item) => !pickedIds.includes(item.id) && !removedIds.includes(item.id),
+            (item) => !pickedLookup[item.id] && !removedLookup[item.id],
         );
         if (!available.length) {
             get().notify('暂无可提示的物品');
@@ -480,7 +508,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         get().notify('已打乱');
     },
     magTool: () => {
-        const { tools, bagItems, itemsMeta, pickedIds, removedIds, itemRefs } = get();
+        const { tools, bagItems, itemsMeta, pickedLookup, removedLookup, itemRefs } = get();
         if (tools.mag <= 0) {
             get().notify('凑齐道具不足');
             return;
@@ -499,8 +527,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         const candidate = itemsMeta.find(
             (item) =>
                 item.type === targetType &&
-                !pickedIds.includes(item.id) &&
-                !removedIds.includes(item.id),
+                !pickedLookup[item.id] &&
+                !removedLookup[item.id],
         );
         if (!candidate) {
             get().notify('暂无可凑齐的物品');

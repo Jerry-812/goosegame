@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { useState, useEffect, useMemo, useRef } from "react";
-import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import { gsap } from 'gsap';
 import type { GLTF } from 'three-stdlib';
 
@@ -83,7 +82,6 @@ const applyItemHighlight = (root: THREE.Object3D, active: boolean) => {
 const Item = ({ id, position, object, delay, type, scale = 1, bagScale }: ItemComponentProps) => {
     const [hovered, setHover] = useState(false);
     const [visible, setVisible] = useState(false);
-    const bodyRef = useRef<RapierRigidBody>(null);
     const worldRef = useRef<THREE.Group>(null);
     
     const bagItems = useGameStore((state) => state.bagItems);
@@ -213,18 +211,6 @@ const Item = ({ id, position, object, delay, type, scale = 1, bagScale }: ItemCo
     useEffect(() => {
         return () => {
             tweenRef.current?.kill();
-            if (model) {
-                model.traverse((child: any) => {
-                    if (child.isMesh) {
-                        child.geometry?.dispose();
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach((m: THREE.Material) => m.dispose());
-                        } else {
-                            child.material?.dispose();
-                        }
-                    }
-                });
-            }
             if (bagModelRef.current) {
                 bagModelRef.current.traverse((child: any) => {
                     if (child.isMesh) {
@@ -271,53 +257,32 @@ const Item = ({ id, position, object, delay, type, scale = 1, bagScale }: ItemCo
         );
     }
     return (
+        object ? (
+            <group
+                ref={worldRef}
+                position={position}
+                onPointerEnter={(e) => {
+                    e.stopPropagation();
+                    setHover(true);
+                }}
+                onPointerOut={() => { setHover(false) }}
+                onPointerUp={(e) => {
+                    e.stopPropagation();
+                    if (gamePhase !== 'playing') return;
 
+                    if (worldRef.current) {
+                        worldRef.current.getWorldPosition(startPosRef.current);
+                    }
 
-        <RigidBody
-            position={position}
-            colliders="cuboid"
-            ref={bodyRef}
-            linearDamping={1.2}
-            angularDamping={1.0}
-            gravityScale={0}
-            canSleep
-        >
-
-            {object &&
-                <group
-                    ref={worldRef}
-                    onPointerEnter={(e) => {
-                        e.stopPropagation();
-                        setHover(true);
-
-                    }}
-                    onPointerOut={() => { setHover(false) }}
-                    // onPointerDown={(e) => { e.stopPropagation(); }}
-                    onPointerUp={(e) => {
-
-                        e.stopPropagation();
-                        if (gamePhase !== 'playing') return;
-
-                        const api = bodyRef.current;
-                        if (api) {
-                            const t = api.translation();
-                            startPosRef.current.set(t.x, t.y, t.z);
-                        } else if (worldRef.current) {
-                            worldRef.current.getWorldPosition(startPosRef.current);
-                        }
-                        const nextPosition = pickItem({ id, type, meshRef: animRef })
-                        if (nextPosition) {
-                            targetRef.current.set(nextPosition.x, nextPosition.y, nextPosition.z);
-                        }
-                    }}
-                >
-                    {model ? <primitive object={model} scale={scale}  >
-
-                    </primitive> : null}
-                </group>
-            }
-
-        </RigidBody>
+                    const nextPosition = pickItem({ id, type, meshRef: animRef })
+                    if (nextPosition) {
+                        targetRef.current.set(nextPosition.x, nextPosition.y, nextPosition.z);
+                    }
+                }}
+            >
+                {model ? <primitive object={model} scale={scale} /> : null}
+            </group>
+        ) : null
     );
 }
 

@@ -64,61 +64,56 @@ for (let i = 1; i <= iterations; i += 1) {
     await stopPreview(preview);
   }
 
-  // Generate patch
+  let patchApplied = false;
+  let improved = false;
+
   try {
     run('node scripts/agent_generate_patch.mjs baseline.json');
     run("node --input-type=module -e \"import {assertPatchSafe,readPatch} from './scripts/guardrails.mjs'; const p=readPatch('agent.patch'); assertPatchSafe(p);\"");
-  } catch (err) {
-    console.error('Patch generation failed, skipping iteration.');
-    if (fs.existsSync('agent.patch')) {
-      fs.unlinkSync('agent.patch');
-    }
-    continue;
-  }
-
-  // Apply and re-evaluate
-  try {
     run('git apply agent.patch');
+    patchApplied = true;
+
+    run('npm run build');
+
+    preview = startPreview(port);
+    try {
+      run(`node scripts/wait-for-ready.mjs --url ${url}`);
+      run(`node scripts/eval_repeat.mjs --url ${url} --runs 3 --dist-dir ${distDir} --screenshot-dir ${screenshotDir} --output candidate.json`);
+      if (screenshotEvery > 0 && i % screenshotEvery === 0) {
+        const outputPath = `${screenshotDir}/loop-iter-${String(i).padStart(3, '0')}.png`;
+        try {
+          run(`node scripts/capture_screenshot.mjs --url ${url} --output ${outputPath}`);
+        } catch (err) {
+          console.warn(`Failed to capture screenshot for iteration ${i}.`);
+        }
+      }
+    } finally {
+      await stopPreview(preview);
+    }
+
+    run('node scripts/score.mjs baseline.json candidate.json --output decision.json || true');
+    if (fs.existsSync('decision.json')) {
+      const decision = JSON.parse(fs.readFileSync('decision.json', 'utf8'));
+      improved = Boolean(decision.improved);
+      console.log('Decision:', decision);
+    }
   } catch (err) {
-    console.error('Patch failed to apply, skipping iteration.');
-    if (fs.existsSync('agent.patch')) {
+    console.error('Patch iteration failed, reverting this patch.', err?.message ?? err);
+    improved = false;
+  } finally {
+    if (patchApplied && !improved) {
+      console.log('Reverting patch (not improved).');
+      try {
+        run('git apply -R agent.patch');
+      } catch (err) {
+        console.error('Failed to revert patch automatically. Please inspect working tree.');
+      }
+    } else if (patchApplied && improved) {
+      console.log('Patch improved metrics. Keeping changes.');
+    }
+
+    if (!patchApplied && fs.existsSync('agent.patch')) {
       fs.unlinkSync('agent.patch');
     }
-    continue;
-  }
-
-  run('npm run build');
-
-  preview = startPreview(port);
-  try {
-    run(`node scripts/wait-for-ready.mjs --url ${url}`);
-    run(`node scripts/eval_repeat.mjs --url ${url} --runs 3 --dist-dir ${distDir} --screenshot-dir ${screenshotDir} --output candidate.json`);
-    if (screenshotEvery > 0 && i % screenshotEvery === 0) {
-      const outputPath = `${screenshotDir}/loop-iter-${String(i).padStart(3, '0')}.png`;
-      try {
-        run(`node scripts/capture_screenshot.mjs --url ${url} --output ${outputPath}`);
-      } catch (err) {
-        console.warn(`Failed to capture screenshot for iteration ${i}.`);
-      }
-    }
-  } finally {
-    await stopPreview(preview);
-  }
-
-  let improved = false;
-  try {
-    run('node scripts/score.mjs baseline.json candidate.json --output decision.json');
-    const decision = JSON.parse(fs.readFileSync('decision.json', 'utf8'));
-    improved = Boolean(decision.improved);
-    console.log('Decision:', decision);
-  } catch (err) {
-    improved = false;
-  }
-
-  if (!improved) {
-    console.log('Reverting patch (not improved).');
-    run('git apply -R agent.patch');
-  } else {
-    console.log('Patch improved metrics. Keeping changes.');
   }
 }

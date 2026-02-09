@@ -56,7 +56,7 @@ function App() {
         const id = Number(idKey);
         const object = ref.current;
         if (!Number.isFinite(id) || !object) continue;
-        if (state.pickedIds.includes(id) || state.removedIds.includes(id)) continue;
+        if (state.pickedLookup[id] || state.removedLookup[id]) continue;
         if (!object.visible) continue;
         const point = new THREE.Vector3();
         object.getWorldPosition(point);
@@ -93,7 +93,9 @@ function App() {
           captured: state.gooseCaptured,
         },
         tools: state.tools,
-        availableCount: state.itemsMeta.length - state.pickedIds.length - state.removedIds.length,
+        availableCount: state.itemsMeta.filter(
+          (item) => !state.pickedLookup[item.id] && !state.removedLookup[item.id],
+        ).length,
         visibleWorldItems,
       };
 

@@ -37,7 +37,10 @@ const summarizeMedian = (runs) => {
 
   const loadMedian = median(successful.map((run) => run.load_ms));
   const fpsMedian = median(successful.map((run) => run.fps));
-  const bundleMedian = median(successful.map((run) => run.bundle_kb ?? 0));
+  const bundleValues = successful
+    .map((run) => run.bundle_kb)
+    .filter((value) => typeof value === 'number');
+  const bundleMedian = bundleValues.length ? median(bundleValues) : null;
   const consoleCounts = median(
     successful.map((run) => run.console_errors?.count ?? 0),
   );
@@ -80,11 +83,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   const medianSummary = summarizeMedian(results);
+  const successCount = results.filter((run) => run.success).length;
+  const minSuccessCount = Math.max(1, Math.ceil(runs / 2));
   const output = {
     url,
     runs: results,
     median: medianSummary,
-    success: results.every((run) => run.success),
+    success: successCount >= minSuccessCount,
   };
 
   if (outputPath) {

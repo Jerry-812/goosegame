@@ -1,43 +1,6 @@
 name: auto-evolve
 
 on:
-  workflow_dispatch:
-
-jobs:
-  evolve:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-
-    env:
-      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          npm --prefix goose-catch-main ci
-
-      - name: Install Playwright
-        run: |
-          for attempt in 1 2 3; do
-            if npx playwright install --with-deps chromium; then
-              exit 0
-            fi
-            echo "Playwright install failed (attempt $attempt). Retrying..."
-            sleep $((attempt * 5))
-          done
-          exit 1
   schedule:
     - cron: "0 9 * * *"
   workflow_dispatch: {}
@@ -46,9 +9,16 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: auto-evolve
+  cancel-in-progress: true
+
 jobs:
   evolve:
     runs-on: ${{ fromJson(vars.RUNNER_LABELS || '\"ubuntu-latest\"') }}
+    env:
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT || vars.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY || vars.LLM_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -65,18 +35,26 @@ jobs:
         run: npm --prefix goose-catch-main ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "Playwright install failed (attempt $attempt). Retrying..."
+            sleep $((attempt * 5))
+          done
+          exit 1
 
-      - name: Build
+      - name: Build baseline
         run: npm run build
 
-      - name: Start preview server
+      - name: Start preview server (baseline)
         run: |
           mkdir -p artifacts
-          npm run preview -- --host 0.0.0.0 --port 4173 > artifacts/preview.log 2>&1 &
+          npm run preview -- --host 0.0.0.0 --port 4173 > artifacts/preview-baseline.log 2>&1 &
           echo $! > artifacts/preview.pid
 
-      - name: Wait for preview
+      - name: Wait for preview (baseline)
         run: node scripts/wait-for-ready.mjs --url http://127.0.0.1:4173 --timeout-ms 30000
 
       - name: Baseline eval (median of 3)
@@ -85,227 +63,106 @@ jobs:
             --url http://127.0.0.1:4173 \
             --runs 3 \
             --dist-dir goose-catch-main/dist \
-            --screenshot-dir artifacts/screenshots \
+            --screenshot-dir artifacts/screenshots/baseline \
             --output artifacts/baseline.json \
             --log artifacts/baseline.log
 
+      - name: Stop preview server (baseline)
+        if: always()
+        run: |
+          if [ -f artifacts/preview.pid ]; then
+            kill "$(cat artifacts/preview.pid)" || true
+            rm -f artifacts/preview.pid
+          fi
+
+      - name: Skip patch generation (missing endpoint)
+        if: env.LLM_ENDPOINT == ''
+        run: echo "LLM_ENDPOINT is empty, baseline-only run."
+
       - name: Fetch patch
         if: env.LLM_ENDPOINT != ''
+        id: fetch_patch
         run: |
           node scripts/fetch_patch.mjs \
             --endpoint "$LLM_ENDPOINT" \
             --prompt-file .github/prompts/auto-evolve.md \
             --output artifacts/patch.diff
+          if [ -s artifacts/patch.diff ]; then
+            echo "has_patch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_patch=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Guardrails
-        if: env.LLM_ENDPOINT != ''
+        if: steps.fetch_patch.outputs.has_patch == 'true'
         run: node scripts/guardrails.mjs artifacts/patch.diff
 
       - name: Apply patch
-        if: env.LLM_ENDPOINT != ''
-        run: |
-          git apply artifacts/patch.diff
-          npm run build
+        if: steps.fetch_patch.outputs.has_patch == 'true'
+        run: git apply artifacts/patch.diff
 
-      - name: Restart preview server
-        if: env.LLM_ENDPOINT != ''
+      - name: Build candidate
+        if: steps.fetch_patch.outputs.has_patch == 'true'
+        run: npm run build
+
+      - name: Start preview server (candidate)
+        if: steps.fetch_patch.outputs.has_patch == 'true'
         run: |
-          if [ -f artifacts/preview.pid ]; then
-            kill "$(cat artifacts/preview.pid)" || true
-          fi
-          npm run preview -- --host 0.0.0.0 --port 4173 > artifacts/preview.log 2>&1 &
+          npm run preview -- --host 0.0.0.0 --port 4173 > artifacts/preview-candidate.log 2>&1 &
           echo $! > artifacts/preview.pid
-          node scripts/wait-for-ready.mjs --url http://127.0.0.1:4173 --timeout-ms 30000
+
+      - name: Wait for preview (candidate)
+        if: steps.fetch_patch.outputs.has_patch == 'true'
+        run: node scripts/wait-for-ready.mjs --url http://127.0.0.1:4173 --timeout-ms 30000
 
       - name: Candidate eval (median of 3)
-        if: env.LLM_ENDPOINT != ''
+        if: steps.fetch_patch.outputs.has_patch == 'true'
         run: |
           node scripts/eval_repeat.mjs \
             --url http://127.0.0.1:4173 \
             --runs 3 \
             --dist-dir goose-catch-main/dist \
-            --screenshot-dir artifacts/screenshots \
+            --screenshot-dir artifacts/screenshots/candidate \
             --output artifacts/candidate.json \
             --log artifacts/candidate.log
 
+      - name: Stop preview server (candidate)
+        if: always() && steps.fetch_patch.outputs.has_patch == 'true'
+        run: |
+          if [ -f artifacts/preview.pid ]; then
+            kill "$(cat artifacts/preview.pid)" || true
+            rm -f artifacts/preview.pid
+          fi
+
       - name: Score
-        if: env.LLM_ENDPOINT != ''
+        if: steps.fetch_patch.outputs.has_patch == 'true'
         id: score
         run: |
           node scripts/score.mjs artifacts/baseline.json artifacts/candidate.json --output artifacts/score.json || true
-          node -e "const fs=require('fs');const data=JSON.parse(fs.readFileSync('artifacts/score.json','utf8'));fs.appendFileSync(process.env.GITHUB_OUTPUT, `improved=${data.improved}\n`);fs.appendFileSync(process.env.GITHUB_OUTPUT, `baselineScore=${data.baselineScore}\n`);fs.appendFileSync(process.env.GITHUB_OUTPUT, `candidateScore=${data.candidateScore}\n`);"
+          node - << 'NODE'
+          const fs = require('node:fs');
+          const out = process.env.GITHUB_OUTPUT;
+          const data = JSON.parse(fs.readFileSync('artifacts/score.json', 'utf8'));
+          fs.appendFileSync(out, `improved=${String(Boolean(data.improved))}\n`);
+          fs.appendFileSync(out, `baselineScore=${String(data.baselineScore ?? '')}\n`);
+          fs.appendFileSync(out, `candidateScore=${String(data.candidateScore ?? '')}\n`);
+          NODE
 
       - name: Create pull request
         if: steps.score.outputs.improved == 'true'
+        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           branch: auto/evolve
-          title: "chore: auto evolve"
+          delete-branch: true
+          title: "auto: improve game performance/stability"
+          commit-message: "auto: optimize"
           body: |
             Automated patch from LLM endpoint.
 
             Score summary:
             - Baseline score: ${{ steps.score.outputs.baselineScore }}
             - Candidate score: ${{ steps.score.outputs.candidateScore }}
-          commit-message: "chore: auto evolve"
-
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: auto-evolve-artifacts
-          path: artifacts
-      - name: Start preview server (baseline)
-        run: |
-          npm run preview -- --host 0.0.0.0 --port 4173 > preview-baseline.log 2>&1 &
-          echo $! > preview.pid
-          ready=0
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
-              ready=1
-              break
-            fi
-            sleep 1
-          done
-          if [ "$ready" -ne 1 ]; then
-            echo "Preview server not ready" >&2
-            tail -n 200 preview-baseline.log || true
-            exit 1
-          fi
-
-      - name: Baseline eval
-        env:
-          DIST_DIR: goose-catch-main/dist
-          EVAL_RUNS: 3
-        run: node scripts/eval.mjs http://127.0.0.1:4173 > baseline.json
-
-      - name: Stop preview server (baseline)
-        if: always()
-        run: |
-          if [ -f preview.pid ]; then
-            kill $(cat preview.pid) || true
-          fi
-
-      - name: Upload baseline artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: baseline-artifacts
-          path: |
-            baseline.json
-            preview-baseline.log
-          if-no-files-found: ignore
-
-      - name: Generate patch (LLM)
-        id: generate
-        env:
-          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT || vars.LLM_ENDPOINT }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY || vars.LLM_API_KEY }}
-        run: |
-          node scripts/agent_generate_patch.mjs baseline.json
-          if [ -s agent.patch ]; then echo "has_patch=true" >> $GITHUB_OUTPUT; else echo "has_patch=false" >> $GITHUB_OUTPUT; fi
-
-      - name: Guardrails
-        if: steps.generate.outputs.has_patch == 'true'
-        run: node --input-type=module -e "import {assertPatchSafe,readPatch} from './scripts/guardrails.mjs'; const p=readPatch('agent.patch'); assertPatchSafe(p); console.log('Patch safe');"
-
-      - name: Apply patch
-        if: steps.generate.outputs.has_patch == 'true'
-        run: |
-          git apply agent.patch
-          git status --porcelain
-
-      - name: Rebuild
-        if: steps.generate.outputs.has_patch == 'true'
-        run: npm run build
-
-      - name: Start preview server (candidate)
-        if: steps.generate.outputs.has_patch == 'true'
-        run: |
-          npm run preview -- --host 0.0.0.0 --port 4173 > preview-candidate.log 2>&1 &
-          echo $! > preview.pid
-          ready=0
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
-              ready=1
-              break
-            fi
-            sleep 1
-          done
-          if [ "$ready" -ne 1 ]; then
-            echo "Preview server not ready" >&2
-            tail -n 200 preview-candidate.log || true
-            exit 1
-          fi
-
-      - name: Candidate eval
-        if: steps.generate.outputs.has_patch == 'true'
-        env:
-          DIST_DIR: goose-catch-main/dist
-          EVAL_RUNS: 3
-        run: node scripts/eval.mjs http://127.0.0.1:4173 > candidate.json
-
-      - name: Stop preview server (candidate)
-        if: always()
-        run: |
-          if [ -f preview.pid ]; then
-            kill $(cat preview.pid) || true
-          fi
-
-      - name: Upload candidate artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: candidate-artifacts
-          path: |
-            candidate.json
-            preview-candidate.log
-            agent.patch
-          if-no-files-found: ignore
-
-      - name: Decide
-        id: decision
-        if: steps.generate.outputs.has_patch == 'true'
-        run: |
-          node --input-type=module - << 'NODE'
-          import fs from "node:fs";
-          import { betterThan, score } from "./scripts/score.mjs";
-          const base = JSON.parse(fs.readFileSync("baseline.json","utf8"));
-          const cand = JSON.parse(fs.readFileSync("candidate.json","utf8"));
-          const ok = betterThan(cand, base);
-          const reasons = [];
-          if (cand.console_errors > 0) reasons.push("console_errors");
-          if (cand.smoke_ok === false) reasons.push("smoke_failed");
-          if (cand.load_ms > base.load_ms * 1.1) reasons.push("load_regression");
-          if (cand.bundle_kb > base.bundle_kb * 1.05) reasons.push("bundle_regression");
-          if (score(cand) <= score(base) + 1.0) reasons.push("score_not_improved");
-          console.log("BASE SCORE:", score(base), base);
-          console.log("CAND SCORE:", score(cand), cand);
-          console.log("DECISION_REASON:", reasons.length ? reasons.join(",") : "improved");
-          if (process.env.GITHUB_OUTPUT) {
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `improved=${ok}\\n`);
-          }
-          if (!ok) {
-            process.exit(1);
-          }
-          NODE
-
-      - name: Cleanup metrics
-        if: steps.generate.outputs.has_patch == 'true'
-        run: rm -f baseline.json candidate.json agent.patch preview.pid decision.txt preview-baseline.log preview-candidate.log || true
-
-      - name: Create Pull Request
-        id: cpr
-        if: steps.decision.outputs.improved == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          title: "auto: improve game performance/stability"
-          commit-message: "auto: optimize"
-          branch: "auto/evolve"
-          delete-branch: true
-          body: |
-            Automated improvement cycle.
-            Baseline/candidate metrics are available in the workflow logs.
 
       - name: Enable auto-merge
         if: steps.cpr.outputs.pull-request-number != ''
@@ -313,3 +170,19 @@ jobs:
         with:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: squash
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-evolve-artifacts
+          path: artifacts
+          if-no-files-found: ignore
+
+      - name: Final cleanup
+        if: always()
+        run: |
+          if [ -f artifacts/preview.pid ]; then
+            kill "$(cat artifacts/preview.pid)" || true
+            rm -f artifacts/preview.pid
+          fi
