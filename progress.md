@@ -18,9 +18,8 @@ Original prompt: 浏览当前游戏中所有场景，仔细研究每个场景中
 - 增加自动化观测接口：window.render_game_to_text / window.advanceTime。
 - 调整物理吸附与相机视角，提升中心视域稳定性。
 
-## 2026-02-09 自动化修复记录
-- 修复 `.github/workflows/auto-evolve.yml` 重复定义 `on/jobs` 导致的 YAML 解析失败（GitHub Actions 报 `jobs is already defined`）。
-- 将 `auto-evolve` 工作流整合为单一流水线：baseline 构建评测、可选补丁生成、candidate 回归、评分、自动 PR、自动合并、工件上传。
-- 增强 `scripts/fetch_patch.mjs`：支持 `LLM_API_KEY` 鉴权头，支持从 markdown code fence 提取 diff，兼容 `patch/output` 字段返回。
-- 增强 `scripts/eval_repeat.mjs`：修复 `bundle_kb` 为空时被错误记为 `0` 的统计偏差，改为多数成功（>=50%）判定，降低自动化偶发抖动。
-- 增强 `scripts/local_loop.mjs`：补丁流程异常时自动回滚，避免候选评估失败后残留脏改动。
+## 2026-02-18 维护记录
+- 按用户要求完全移除每日自动改动流程：删除对应 workflow、prompt、npm 入口与相关脚本文件。
+- 清理文档中自动演化说明（`README.md`）。
+- 运行 Playwright 自动化回归（桌面与移动视口）：场景切换、风格切换、开始游戏、点击收集、暂停/继续、道具操作均可执行，且未出现新的 console/page error。
+- 备注：`npm run build` 当前仍存在既有 TypeScript 报错（`src/components/Items.tsx` 的只读数组类型不匹配），与本次流程清理无关。

@@ -13,7 +13,6 @@
     "dev": "npm run core:dev --",
     "build": "npm run core:build",
     "preview": "npm run core:preview --",
-    "auto:loop": "node scripts/local_loop.mjs",
     "electron:dev": "node electron/ensure-electron.js && env -u ELECTRON_RUN_AS_NODE electron .",
     "electron:pack": "npm run core:install && npm run core:build && electron-builder --dir",
     "electron:dist": "npm run core:install && npm run core:build && electron-builder --mac dir"
