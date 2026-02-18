@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768">
+  <defs>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000" flood-opacity="0.22" />
+    </filter>
+    <radialGradient id="skin" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffe6d6" />
+      <stop offset="0.55" stop-color="#ffd0b8" />
+      <stop offset="1" stop-color="#f6b99e" />
+    </radialGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b56a19" />
+      <stop offset="0.55" stop-color="#f2c45b" />
+      <stop offset="1" stop-color="#fff1bf" />
+    </linearGradient>
+    <linearGradient id="dress" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff2f8f" />
+      <stop offset="0.55" stop-color="#ff78bc" />
+      <stop offset="1" stop-color="#ffe3f2" />
+    </linearGradient>
+    <linearGradient id="shoe" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff2f8f" />
+      <stop offset="1" stop-color="#8b1a55" />
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="256" cy="704" rx="118" ry="22" fill="#000" opacity="0.10" />
+
+    <!-- hair back -->
+    <path
+      d="M132 214c8-86 78-140 124-140s116 54 124 140c-34-30-74-46-124-46s-90 16-124 46z"
+      fill="url(#hair)"
+    />
+    <path
+      d="M118 276c18-106 94-160 138-160s120 54 138 160c-46-52-84-64-138-64s-92 12-138 64z"
+      fill="url(#hair)"
+      opacity="0.95"
+    />
+
+    <!-- head -->
+    <circle cx="256" cy="268" r="78" fill="url(#skin)" />
+    <path d="M206 264c16-16 34-24 50-24s34 8 50 24" fill="none" stroke="#2b1b1b" stroke-width="10" stroke-linecap="round" opacity="0.12" />
+    <ellipse cx="226" cy="276" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <ellipse cx="286" cy="276" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <circle cx="232" cy="272" r="6" fill="#fff" opacity="0.9" />
+    <circle cx="292" cy="272" r="6" fill="#fff" opacity="0.9" />
+    <path d="M248 298c8 6 16 6 24 0" fill="none" stroke="#c06a70" stroke-width="8" stroke-linecap="round" />
+    <circle cx="206" cy="300" r="14" fill="#ff8fb6" opacity="0.22" />
+    <circle cx="306" cy="300" r="14" fill="#ff8fb6" opacity="0.22" />
+
+    <!-- hair front -->
+    <path
+      d="M160 248c16-74 76-122 96-122s80 48 96 122c-28-22-56-30-96-30s-68 8-96 30z"
+      fill="url(#hair)"
+    />
+    <path d="M164 246c22 20 44 30 92 30s70-10 92-30" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity="0.18" />
+
+    <!-- neck -->
+    <path d="M232 340c6 28 10 44 24 44s18-16 24-44" fill="url(#skin)" />
+
+    <!-- torso -->
+    <path
+      d="M178 410c20-44 46-66 78-66s58 22 78 66c-18 42-44 74-78 74s-60-32-78-74z"
+      fill="url(#dress)"
+    />
+    <path d="M206 402c10-16 28-24 50-24s40 8 50 24" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity="0.22" />
+
+    <!-- arms -->
+    <path d="M176 438c-50 22-84 62-92 110" fill="none" stroke="url(#skin)" stroke-width="24" stroke-linecap="round" />
+    <path d="M336 438c50 22 84 62 92 110" fill="none" stroke="url(#skin)" stroke-width="24" stroke-linecap="round" />
+
+    <!-- skirt -->
+    <path
+      d="M112 486c44-40 96-60 144-60s100 20 144 60c-14 132-98 238-144 238S126 618 112 486z"
+      fill="url(#dress)"
+    />
+    <path
+      d="M172 512c28-24 56-36 84-36s56 12 84 36c-12 104-52 186-84 186s-72-82-84-186z"
+      fill="#fff"
+      opacity="0.16"
+    />
+
+    <!-- legs -->
+    <path d="M230 612c-30 58-42 94-42 132" fill="none" stroke="url(#skin)" stroke-width="22" stroke-linecap="round" />
+    <path d="M282 612c30 58 42 94 42 132" fill="none" stroke="url(#skin)" stroke-width="22" stroke-linecap="round" />
+
+    <!-- shoes -->
+    <path d="M154 744c40 18 72 18 96 0" fill="none" stroke="url(#shoe)" stroke-width="18" stroke-linecap="round" />
+    <path d="M262 744c40 18 72 18 96 0" fill="none" stroke="url(#shoe)" stroke-width="18" stroke-linecap="round" />
+  </g>
+</svg>
+

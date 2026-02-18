@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/hud.tsx","./src/components/mergeburst.tsx","./src/components/mergering.tsx","./src/components/pileitem.tsx","./src/components/scene.tsx","./src/stores/usegamestore.ts","./src/utils/rng.ts"],"version":"5.7.3"}

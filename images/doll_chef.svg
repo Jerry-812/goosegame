@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768">
+  <defs>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000" flood-opacity="0.22" />
+    </filter>
+    <radialGradient id="skin" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffe6d6" />
+      <stop offset="0.55" stop-color="#ffd0b8" />
+      <stop offset="1" stop-color="#f6b99e" />
+    </radialGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a1f14" />
+      <stop offset="1" stop-color="#b07a50" />
+    </linearGradient>
+    <linearGradient id="apron" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5b6b" />
+      <stop offset="0.55" stop-color="#ffb3b9" />
+      <stop offset="1" stop-color="#fff1f2" />
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="256" cy="704" rx="118" ry="22" fill="#000" opacity="0.10" />
+
+    <!-- hat -->
+    <path
+      d="M146 190c0-44 40-74 88-62 16-36 88-36 104 0 48-12 88 18 88 62 0 36-24 60-60 60H206c-36 0-60-24-60-60z"
+      fill="#fff"
+      opacity="0.96"
+    />
+    <path d="M176 250v52h160v-52" fill="none" stroke="#ffd1e7" stroke-width="12" opacity="0.85" />
+
+    <!-- hair -->
+    <path d="M134 308c18-86 88-136 122-136s104 50 122 136c-44-30-80-44-122-44s-78 14-122 44z" fill="url(#hair)" opacity="0.95" />
+
+    <!-- head -->
+    <circle cx="256" cy="330" r="78" fill="url(#skin)" />
+    <ellipse cx="226" cy="342" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <ellipse cx="286" cy="342" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <circle cx="232" cy="338" r="6" fill="#fff" opacity="0.9" />
+    <circle cx="292" cy="338" r="6" fill="#fff" opacity="0.9" />
+    <path d="M244 368c10 10 24 10 24 0" fill="none" stroke="#c06a70" stroke-width="8" stroke-linecap="round" />
+
+    <!-- neck -->
+    <path d="M232 410c6 28 10 44 24 44s18-16 24-44" fill="url(#skin)" />
+
+    <!-- apron body -->
+    <path d="M170 512c22-72 50-108 86-108s64 36 86 108c-18 90-50 166-86 166s-68-76-86-166z" fill="#fff" opacity="0.85" />
+    <path d="M182 520c20-68 44-102 74-102s54 34 74 102c-16 106-44 188-74 188s-58-82-74-188z" fill="url(#apron)" />
+    <path d="M200 582h112" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity="0.3" />
+    <path d="M256 512v238" stroke="#fff" stroke-width="10" opacity="0.18" />
+
+    <!-- arms -->
+    <path d="M164 548c-62 18-102 60-116 128" fill="none" stroke="url(#skin)" stroke-width="22" stroke-linecap="round" />
+    <path d="M348 548c62 18 102 60 116 128" fill="none" stroke="url(#skin)" stroke-width="22" stroke-linecap="round" />
+
+    <!-- shoes -->
+    <path d="M140 744c46 18 84 18 112 0" fill="none" stroke="#ff4b9a" stroke-width="18" stroke-linecap="round" opacity="0.9" />
+    <path d="M260 744c46 18 84 18 112 0" fill="none" stroke="#ff4b9a" stroke-width="18" stroke-linecap="round" opacity="0.9" />
+  </g>
+</svg>
+

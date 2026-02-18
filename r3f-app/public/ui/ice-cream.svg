@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="cone" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f3c19c"/>
+      <stop offset="1" stop-color="#e09a6a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="20" r="12" fill="#ff8fab"/>
+  <circle cx="24" cy="24" r="9" fill="#ffc6a8"/>
+  <circle cx="40" cy="24" r="9" fill="#ffd6e0"/>
+  <path d="M32 30 L46 58 H18 Z" fill="url(#cone)"/>
+  <path d="M28 38 L36 38" stroke="#c68554" stroke-width="2"/>
+  <path d="M26 44 L38 44" stroke="#c68554" stroke-width="2"/>
+  <path d="M24 50 L40 50" stroke="#c68554" stroke-width="2"/>
+</svg>

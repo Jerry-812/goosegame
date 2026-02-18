@@ -1,0 +1,19 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kettle-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9bb0"/>
+      <stop offset="1" stop-color="#e45b76"/>
+    </linearGradient>
+    <linearGradient id="kettle-top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f7f7"/>
+      <stop offset="1" stop-color="#c9c9c9"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="200" rx="70" ry="12" fill="#cda8b3" opacity="0.35"/>
+  <rect x="64" y="90" width="112" height="90" rx="36" fill="url(#kettle-body)"/>
+  <rect x="78" y="74" width="84" height="26" rx="13" fill="url(#kettle-top)"/>
+  <circle cx="120" cy="70" r="10" fill="#d0d0d0"/>
+  <path d="M176 110 L210 120 L200 140 L172 132 Z" fill="#f7a9b8" stroke="#e0677d" stroke-width="3"/>
+  <path d="M80 96 C58 104 48 126 52 148 C56 170 76 182 100 176" fill="none" stroke="#3a2a2a" stroke-width="12" stroke-linecap="round"/>
+  <path d="M80 96 C60 106 52 126 56 146 C60 166 78 176 96 170" fill="none" stroke="#f2f2f2" stroke-width="4" stroke-linecap="round"/>
+</svg>

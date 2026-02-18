@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f2708c" />
+    <title>日常收纳消除</title>
+    <meta name="description" content="生活小物主题合并消除小游戏：点击可见物品进栏，三个相同自动消除，限时挑战。" />
+    <meta property="og:title" content="日常收纳消除" />
+    <meta property="og:description" content="生活小物主题合并消除小游戏：点击可见物品进栏，三个相同自动消除，限时挑战。" />
+    <meta property="og:image" content="./icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <button class="icon-btn" id="pauseBtn" type="button" aria-label="暂停">
+          <span class="icon">||</span>
+        </button>
+        <div class="timer-pill" id="timerPill" aria-label="倒计时">
+          <span class="timer-icon">TIME</span>
+          <span id="timer">0:00</span>
+        </div>
+        <button class="icon-btn" id="menuBtn" type="button" aria-label="菜单">
+          <span class="icon">...</span>
+        </button>
+      </header>
+
+      <section class="status" aria-label="游戏状态">
+        <div class="stat-chip">
+          <span class="stat-label">得分</span>
+          <span class="stat-value" id="scoreMain">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">最佳</span>
+          <span class="stat-value" id="bestMain">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">剩余</span>
+          <span class="stat-value" id="remainMain">0</span>
+        </div>
+        <div class="combo-chip" id="comboChip" hidden>
+          <span class="combo-label">连消</span>
+          <span class="combo-value" id="comboValue">x2</span>
+          <span class="combo-bar"><span class="combo-bar-fill" id="comboBar"></span></span>
+        </div>
+      </section>
+      <div class="timer-track" id="timerTrack" aria-hidden="true">
+        <div class="timer-fill" id="timerFill"></div>
+      </div>
+
+      <section class="board-wrap">
+        <div class="decor">
+          <img class="decor-palette" src="./images/decor_palette.svg" alt="" />
+          <img class="decor-brushes" src="./images/decor_brushes.svg" alt="" />
+          <img class="decor-powder" src="./images/decor_powder.svg" alt="" />
+        </div>
+        <div class="board" id="board" aria-label="游戏区域" role="application">
+          <canvas class="scene" id="scene"></canvas>
+          <div class="merge-fx" id="mergeFx" hidden></div>
+          <canvas class="confetti" id="confetti" width="1" height="1" hidden></canvas>
+        </div>
+      </section>
+
+      <footer class="tray" aria-label="待合成栏">
+        <div class="tray-slots" id="traySlots"></div>
+        <div class="tools" aria-label="道具栏">
+          <button class="tool-btn" id="toolRemove" type="button">
+            <span class="tool-icon">OUT</span>
+            <span class="tool-label">移出</span>
+            <span class="tool-count" id="toolRemoveCount">2</span>
+          </button>
+          <button class="tool-btn" id="toolMatch" type="button">
+            <span class="tool-icon">MAG</span>
+            <span class="tool-label">凑齐</span>
+            <span class="tool-count" id="toolMatchCount">2</span>
+          </button>
+          <button class="tool-btn tool-hint" id="toolHint" type="button">
+            <span class="tool-icon">TIP</span>
+            <span class="tool-label">提示</span>
+            <span class="tool-count" id="toolHintCount">3</span>
+          </button>
+          <button class="tool-btn tool-undo" id="toolUndo" type="button">
+            <span class="tool-icon">UNDO</span>
+            <span class="tool-label">撤回</span>
+            <span class="tool-count" id="toolUndoCount">2</span>
+          </button>
+          <button class="tool-btn tool-freeze" id="toolFreeze" type="button">
+            <span class="tool-icon">ICE</span>
+            <span class="tool-label">停时</span>
+            <span class="tool-count" id="toolFreezeCount">2</span>
+          </button>
+          <button class="tool-btn" id="toolShuffle" type="button">
+            <span class="tool-icon">MIX</span>
+            <span class="tool-label">打乱</span>
+            <span class="tool-count" id="toolShuffleCount">1</span>
+          </button>
+        </div>
+      </footer>
+
+      <div class="overlay" id="overlay" hidden>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+          <div class="dialog-title" id="dialogTitle"></div>
+          <div class="dialog-sub" id="dialogSub"></div>
+          <div class="dialog-actions">
+            <button class="btn" id="shareEndBtn" type="button">分享链接</button>
+            <button class="btn primary" id="againBtn" type="button">再来一局</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="help" hidden>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+          <div class="dialog-title" id="helpTitle">玩法说明</div>
+          <div class="dialog-sub">
+            <div class="mode">
+              <div class="mode-title">难度</div>
+              <div class="mode-options" role="radiogroup" aria-label="难度选择">
+                <label class="mode-opt">
+                  <input type="radio" name="mode" value="easy" checked />
+                  <span>轻松</span>
+                </label>
+                <label class="mode-opt">
+                  <input type="radio" name="mode" value="normal" />
+                  <span>标准</span>
+                </label>
+                <label class="mode-opt">
+                  <input type="radio" name="mode" value="hard" />
+                  <span>高手</span>
+                </label>
+              </div>
+              <div class="mode-sub" id="modeDesc">准备中...</div>
+            </div>
+            <ul class="help-list">
+              <li>只能点击“最上层可见”的物品（被遮挡会变暗且不可点）。</li>
+              <li>点击后进入底部待合成栏；同类型累计 3 个会自动消除并加分。</li>
+              <li>限时清空所有物品获胜；待合成栏放满且无法继续放置则失败。</li>
+              <li>道具“移出”移走一个栏内物品，“凑齐”吸来同类，“提示”高亮可点物品，“撤回”送回盘面，“停时”冻结倒计时，“打乱”洗牌。</li>
+              <li>积分达到阶段会奖励随机道具，连消越高得分越多。</li>
+              <li>快捷键：1-6 使用道具，空格/P 暂停，H 打开菜单。</li>
+            </ul>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" id="copySeedBtn" type="button">复制局号</button>
+            <button class="btn primary" id="closeHelpBtn" type="button">开始</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="pause" hidden>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+          <div class="dialog-title" id="pauseTitle">暂停中</div>
+          <div class="dialog-sub">
+            <div class="pause-row">
+              <span>声音</span>
+              <button class="btn icon" id="soundBtn" type="button" aria-label="声音开关">
+                <span class="icon" aria-hidden="true">ON</span>
+              </button>
+            </div>
+            <div class="pause-stats">
+              <div>得分：<span id="score">0</span></div>
+              <div>最佳：<span id="best">0</span></div>
+              <div>剩余物品：<span id="remain">0</span></div>
+            </div>
+            <div class="quality-panel" id="qualityPanel" hidden>
+              <div class="quality-header">
+                <div class="quality-title">质量评分（Benchmark）</div>
+                <div class="quality-score">
+                  <span class="quality-score-value" id="qualityScore">--</span>
+                  <span class="quality-score-grade" id="qualityGrade">-</span>
+                </div>
+              </div>
+              <div class="quality-grid">
+                <div>性能</div>
+                <div id="qualityPerf">--</div>
+                <div>稳定性</div>
+                <div id="qualityStability">--</div>
+                <div>响应性</div>
+                <div id="qualityResponsiveness">--</div>
+                <div>玩法流畅度</div>
+                <div id="qualityGameplay">--</div>
+              </div>
+              <div class="quality-notes" id="qualityNotes"></div>
+            </div>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" id="restartBtn" type="button">重开</button>
+            <button class="btn primary" id="resumeBtn" type="button">继续</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+      <div class="overlay" id="loading" hidden>
+        <div class="dialog loading">
+          <div class="dialog-title">加载中…</div>
+          <div class="dialog-sub" id="loadingText">正在准备素材</div>
+          <div class="loading-bar"><div class="loading-fill" id="loadingFill"></div></div>
+        </div>
+      </div>
+    </main>
+
+    <script src="./main.js" type="module"></script>
+    <script>
+      window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
+  </body>
+</html>

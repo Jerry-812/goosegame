@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768">
+  <defs>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity="0.22" />
+    </filter>
+    <radialGradient id="skin" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffe6d6" />
+      <stop offset="0.55" stop-color="#ffd0b8" />
+      <stop offset="1" stop-color="#f6b99e" />
+    </radialGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7a3b10" />
+      <stop offset="0.55" stop-color="#e9b14a" />
+      <stop offset="1" stop-color="#fff0b6" />
+    </linearGradient>
+    <linearGradient id="gown" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff36c8" />
+      <stop offset="0.55" stop-color="#ff7af0" />
+      <stop offset="1" stop-color="#ffe5fb" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1ad" />
+      <stop offset="0.55" stop-color="#ffd86b" />
+      <stop offset="1" stop-color="#c27a1a" />
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="256" cy="708" rx="168" ry="26" fill="#000" opacity="0.10" />
+
+    <!-- crown -->
+    <path d="M160 138l26 42 70-68 70 68 26-42 10 70H150z" fill="url(#gold)" />
+    <circle cx="256" cy="138" r="12" fill="#fff8d1" opacity="0.95" />
+    <circle cx="196" cy="168" r="10" fill="#fff8d1" opacity="0.92" />
+    <circle cx="316" cy="168" r="10" fill="#fff8d1" opacity="0.92" />
+
+    <!-- hair -->
+    <path
+      d="M118 246c16-98 92-162 138-162s122 64 138 162c-42-38-86-56-138-56s-96 18-138 56z"
+      fill="url(#hair)"
+    />
+    <path
+      d="M92 314c26-130 118-198 164-198s138 68 164 198c-58-66-106-82-164-82s-106 16-164 82z"
+      fill="url(#hair)"
+      opacity="0.94"
+    />
+
+    <!-- head -->
+    <circle cx="256" cy="308" r="82" fill="url(#skin)" />
+    <ellipse cx="222" cy="318" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <ellipse cx="290" cy="318" rx="18" ry="14" fill="#1e1a1a" opacity="0.92" />
+    <circle cx="228" cy="314" r="6" fill="#fff" opacity="0.9" />
+    <circle cx="296" cy="314" r="6" fill="#fff" opacity="0.9" />
+    <path d="M244 342c10 10 24 10 24 0" fill="none" stroke="#c06a70" stroke-width="8" stroke-linecap="round" />
+    <circle cx="206" cy="346" r="14" fill="#ff8fb6" opacity="0.18" />
+    <circle cx="306" cy="346" r="14" fill="#ff8fb6" opacity="0.18" />
+
+    <!-- neck -->
+    <path d="M232 388c6 28 10 44 24 44s18-16 24-44" fill="url(#skin)" />
+
+    <!-- sleeves -->
+    <path d="M160 458c-56 18-98 62-110 128" fill="none" stroke="#ffe5fb" stroke-width="26" stroke-linecap="round" opacity="0.85" />
+    <path d="M352 458c56 18 98 62 110 128" fill="none" stroke="#ffe5fb" stroke-width="26" stroke-linecap="round" opacity="0.85" />
+
+    <!-- bodice -->
+    <path
+      d="M170 462c22-56 50-84 86-84s64 28 86 84c-16 54-48 96-86 96s-70-42-86-96z"
+      fill="url(#gown)"
+    />
+    <path d="M214 450h84" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity="0.22" />
+
+    <!-- big skirt -->
+    <path
+      d="M64 520c60-60 126-90 192-90s132 30 192 90c-18 144-132 248-192 248S82 664 64 520z"
+      fill="url(#gown)"
+    />
+    <path
+      d="M118 548c44-44 92-66 138-66s94 22 138 66c-20 114-88 198-138 198S138 662 118 548z"
+      fill="#fff"
+      opacity="0.14"
+    />
+
+    <!-- sparkles -->
+    <g fill="#fff6cc" opacity="0.9">
+      <circle cx="152" cy="572" r="7" />
+      <circle cx="360" cy="572" r="7" />
+      <circle cx="256" cy="608" r="8" />
+      <circle cx="206" cy="654" r="7" />
+      <circle cx="306" cy="654" r="7" />
+    </g>
+  </g>
+</svg>
+

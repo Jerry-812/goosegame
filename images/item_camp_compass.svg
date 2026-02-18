@@ -1,0 +1,14 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="compass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f7f7"/>
+      <stop offset="1" stop-color="#d2d6dc"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="200" rx="58" ry="10" fill="#cda8b3" opacity="0.35"/>
+  <circle cx="120" cy="124" r="64" fill="url(#compass)"/>
+  <circle cx="120" cy="124" r="46" fill="#fef8e8"/>
+  <path d="M120 84 L136 124 L120 164 L104 124 Z" fill="#e85c5c"/>
+  <circle cx="120" cy="124" r="8" fill="#3b3d44"/>
+  <rect x="114" y="76" width="12" height="18" rx="6" fill="#3b3d44"/>
+</svg>

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 768">
+  <defs>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity="0.22" />
+    </filter>
+    <linearGradient id="suit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f7ff" />
+      <stop offset="1" stop-color="#cfd8ff" />
+    </linearGradient>
+    <linearGradient id="visor" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f5bff" stop-opacity="0.86" />
+      <stop offset="1" stop-color="#bfe5ff" stop-opacity="0.55" />
+    </linearGradient>
+    <radialGradient id="glow" cx="35%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.9" />
+      <stop offset="1" stop-color="#fff" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <g filter="url(#ds)">
+    <ellipse cx="256" cy="706" rx="132" ry="24" fill="#000" opacity="0.10" />
+
+    <!-- helmet -->
+    <circle cx="256" cy="246" r="132" fill="url(#suit)" />
+    <circle cx="256" cy="252" r="96" fill="url(#visor)" />
+    <ellipse cx="226" cy="246" rx="40" ry="22" fill="#081a3a" opacity="0.18" />
+    <ellipse cx="286" cy="246" rx="40" ry="22" fill="#081a3a" opacity="0.18" />
+    <path d="M178 260c16-36 44-54 78-54s62 18 78 54" fill="none" stroke="#e7eeff" stroke-width="12" opacity="0.7" />
+    <circle cx="210" cy="212" r="56" fill="url(#glow)" opacity="0.7" />
+
+    <!-- suit -->
+    <path
+      d="M152 452c28-86 70-130 104-130s76 44 104 130c-20 112-62 214-104 214S172 564 152 452z"
+      fill="url(#suit)"
+    />
+    <path d="M196 464h120" stroke="#a7b3e6" stroke-width="12" stroke-linecap="round" opacity="0.7" />
+    <rect x="214" y="490" width="84" height="64" rx="20" fill="#ff77b7" opacity="0.9" />
+    <circle cx="240" cy="522" r="9" fill="#fff" opacity="0.9" />
+    <circle cx="272" cy="522" r="9" fill="#fff" opacity="0.9" />
+    <circle cx="304" cy="522" r="9" fill="#fff" opacity="0.9" />
+
+    <!-- arms -->
+    <path d="M142 486c-66 22-112 72-124 152" fill="none" stroke="url(#suit)" stroke-width="26" stroke-linecap="round" />
+    <path d="M370 486c66 22 112 72 124 152" fill="none" stroke="url(#suit)" stroke-width="26" stroke-linecap="round" />
+
+    <!-- boots -->
+    <path d="M136 744c46 18 84 18 112 0" fill="none" stroke="#7a86c8" stroke-width="20" stroke-linecap="round" opacity="0.85" />
+    <path d="M264 744c46 18 84 18 112 0" fill="none" stroke="#7a86c8" stroke-width="20" stroke-linecap="round" opacity="0.85" />
+  </g>
+</svg>
+

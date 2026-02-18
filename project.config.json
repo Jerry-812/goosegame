@@ -1,0 +1,15 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "barbie-merge",
+  "description": "芭比娃娃主题合并消除小游戏",
+  "appid": "touristappid",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "miniprogram"
+}
+
